@@ -1,0 +1,5 @@
+#!/bin/sh
+# Conservative feature probes for an assembly-output-only compiler build.
+# Never let Linux host binutils certify NeXT assembler/linker capabilities.
+echo 'NeXT target tool unavailable: this build supports assembly output only.' >&2
+exit 1

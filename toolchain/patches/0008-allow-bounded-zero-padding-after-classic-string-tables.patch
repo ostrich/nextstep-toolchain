@@ -1,0 +1,49 @@
+--- a/libstuff/checkout.c
++++ b/libstuff/checkout.c
+@@ -715,6 +715,9 @@
+ {
+     uint32_t end, sigend, strend, rounded_strend;
+     uint32_t indirectend, rounded_indirectend;
++#ifdef NEXTSTEP_CCTOOLS
++    uint32_t nextstep_padding = 0;
++#endif
+ 
+ 	if(object->st != NULL && object->st->nsyms != 0){
+ 	    end = object->object_size;
+@@ -746,6 +749,23 @@
+ 		 * object_size due to rounding.
+ 		 */
+ 		rounded_strend = (uint32_t)rnd(strend, 8);
++#ifdef NEXTSTEP_CCTOOLS
++		/* Classic ld can leave zero-filled linker padding after the
++		 * declared string table. Only accept bounded, entirely zero
++		 * padding; do not apply this to code-signed layouts. */
++		if(object->code_sig_cmd == NULL && strend < end &&
++		   end - strend < 4096){
++		    uint64_t offset;
++		    for(offset = strend; offset < end; offset++){
++			if(((unsigned char *)object->object_addr)[offset] != 0)
++			    break;
++		    }
++		    if(offset == end){
++			nextstep_padding = end - strend;
++			end = strend;
++		    }
++		}
++#endif
+ 		if(strend != end && rounded_strend != end)
+ 		    fatal_arch(arch, member, "string table not at the end "
+ 			"of the file (can't be processed) in file: ");
+@@ -757,7 +777,11 @@
+ 		 * we'll just do this here.  If there is a code signature after
+ 		 * string table don't do this.
+ 		 */
+-		if(rounded_strend != strend && object->code_sig_cmd == NULL)
++		if(rounded_strend != strend && object->code_sig_cmd == NULL
++#ifdef NEXTSTEP_CCTOOLS
++		   && nextstep_padding == 0
++#endif
++		  )
+ 		    object->object_size = strend;
+ 		end = object->st->stroff;
+ 	    }

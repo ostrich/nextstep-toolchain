@@ -1,0 +1,90 @@
+--- a/ld/objects.h
++++ b/ld/objects.h
+@@ -253,6 +253,7 @@
+     unsigned long index;	/* symbol's index in symbol table */
+     unsigned long order;	/* order in output, 0 if not assigned yet */
+     unsigned long line_number;  /* line number if specified or zero */
++    unsigned long explicit_align; /* ordered atom alignment exponent + 1, or 0 */
+     unsigned long input_offset;	/* offset in the input file for the item */
+     unsigned long input_size;	/* size of symbol in the input file */
+     unsigned long output_offset;/* offset in the output file for the item */
+--- a/ld/sections.c
++++ b/ld/sections.c
+@@ -1219,6 +1219,7 @@
+ 
+     unsigned long n, order, output_offset, line_number, line_length;
+     unsigned long unused_specifications, no_specifications;
++    unsigned long pending_align = 0;
+     char *line, *archive_name, *object_name, *symbol_name;
+     struct load_order *load_order;
+     struct section_map *section_map;
+@@ -1459,6 +1460,22 @@
+ 		continue;
+ 	    }
+ 
++	    /* Explicit alignment applies only to the next named atom.  Ordinary
++	     * atoms retain their input alignment phase. */
++	    if(strncmp(line, ".symbol_align ", 14) == 0){
++		char *endp;
++		unsigned long align = strtoul(line + 14, &endp, 0);
++		if(endp == line + 14 || *endp != '\0' ||
++		   align > MAXSECTALIGN || pending_align != 0)
++		    error("bad .symbol_align in -sectorder file: %s line %lu",
++			  ms->order_filename, line_number);
++		else
++		    pending_align = align + 1;
++		i += line_length + 1;
++		line_number++;
++		continue;
++	    }
++
+ 	    parse_order_line(line, &archive_name, &object_name, &symbol_name,
+ 			     ms, line_number);
+ 
+@@ -1495,6 +1512,11 @@
+ 		else{
+ 		    load_order->order = order++;
+ 		    load_order->line_number = line_number;
++		    load_order->explicit_align = pending_align;
++		    if(load_order->explicit_align != 0)
++			output_offset = rnd(output_offset,
++			    1UL << (load_order->explicit_align - 1));
++		    else
+ 		    output_offset = align_to_input_mod(output_offset,
+ 						       load_order->input_offset,
+ 						       ms->s.align);
+@@ -1609,9 +1631,15 @@
+ 		    unused_specifications++;
+ 		}
+ 	    }
++	    if(pending_align != 0 && (load_order == NULL || load_order->line_number != line_number))
++		error(".symbol_align requires a unique named atom in %s line %lu",
++		      ms->order_filename, line_number);
++	    pending_align = 0;
+ 	    i += line_length + 1;
+ 	    line_number++;
+ 	}
++	if(pending_align != 0)
++	    error("unterminated .symbol_align in -sectorder file: %s", ms->order_filename);
+ 
+ 	/*
+ 	 * Deallocate the memory for the load order file now that it is
+@@ -1822,6 +1850,7 @@
+ 		   (load_map == TRUE || dead_strip == TRUE)){
+ 		    free(cur_obj->cur_section_map->load_orders);
+ 		    load_order = allocate(sizeof(struct load_order));
++		    memset(load_order, 0, sizeof(*load_order));
+ 		    n = 1;
+ 		    cur_obj->cur_section_map->load_orders = load_order;
+ 		    cur_obj->cur_section_map->nload_orders = n;
+@@ -3253,6 +3282,10 @@
+ 	    load_order = order_load_maps[i].load_order;
+ 	    fine_reloc = load_order->fine_reloc;
+ 
++	    if(load_order->explicit_align != 0)
++		output_offset = rnd(output_offset,
++		    1UL << (load_order->explicit_align - 1));
++	    else
+ 	    output_offset = align_to_input_mod(output_offset,
+ 					       load_order->input_offset,
+ 					       ms->s.align);

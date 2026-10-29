@@ -1,0 +1,14 @@
+--- a/include/flatbuffers/buffer.h
++++ b/include/flatbuffers/buffer.h
+@@ -75,6 +75,11 @@
+ 
+ template <typename T>
+ FLATBUFFERS_CONSTEXPR size_t AlignOf() {
++  // Wire scalars and offsets align to their encoded width, independently of
++  // the host ABI (m68k permits two-byte alignment for larger scalar types).
++  // Generated structures retain their explicit schema alignment.
++  if (is_scalar<T>::value || is_specialisation_of_Offset<T>::value ||
++      is_specialisation_of_Offset64<T>::value) return sizeof(T);
+   // clang-format off
+   #ifdef _MSC_VER
+     return __alignof(T);

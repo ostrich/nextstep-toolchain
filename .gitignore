@@ -1,0 +1,55 @@
+# Local builds, releases and private SDK/workspace inputs.
+/work/
+/build/
+/stage/
+/hello-stage/
+/unpacked/
+/install/
+/dist/
+/sdk/
+/workspace/
+
+# Products of the bundled Hello example.
+/examples/hello/hello
+/examples/hello/stage/
+/examples/hello/dist/
+
+# Compiler and linker outputs. Keep assembly sources and ABI descriptions.
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.shlib
+a.out
+
+# Private installation media and VM disks, wherever supplied locally.
+*.iso
+*.cdr
+*.dmg
+*.raw
+*.img
+*.vdi
+*.vmdk
+*.qcow
+*.qcow2
+*.vhd
+*.vhdx
+
+# Python environments and caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local configuration and editor files. Template configuration stays visible.
+.env
+.env.*
+!.env.example
+!.env.sample
+.envrc
+.DS_Store
+*~
+*.swp
+*.swo

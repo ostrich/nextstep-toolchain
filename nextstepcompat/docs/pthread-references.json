@@ -1,0 +1,45 @@
+{
+  "darwin-cthreads.c": {
+    "url": "https://raw.githubusercontent.com/evolver56k/Darwin-0.3/master/Libc-1/threads.subproj/cthreads.c",
+    "sha256": "e268bbfbf45ec71764b8e10e2579bfbccda599413da36a40de3385650fc4aa70"
+  },
+  "darwin-cprocs.c": {
+    "url": "https://raw.githubusercontent.com/evolver56k/Darwin-0.3/master/Libc-1/threads.subproj/cprocs.c",
+    "sha256": "2e3c5fcb5c4a57a8149e4aa87a9770a183a5f2965807d40f7ca188c919168182"
+  },
+  "darwin-kern_sig.c": {
+    "url": "https://raw.githubusercontent.com/evolver56k/Darwin-0.3/master/kernel-7/bsd/kern/kern_sig.c",
+    "sha256": "9d47042541a85063109af6d4a9d913d4fa77966d127d4de43daa3ce03e7862f8"
+  },
+  "musl-cond.c": {
+    "url": "https://git.musl-libc.org/cgit/musl/plain/src/thread/pthread_cond_timedwait.c",
+    "sha256": "2a3413f7e63a59bffb4a5a9d32692bb5f16554e1356318000ce372a9ecfbb4f8"
+  },
+  "musl-cancel.c": {
+    "url": "https://git.musl-libc.org/cgit/musl/plain/src/thread/pthread_cancel.c",
+    "sha256": "aedb26402bbafc18e00129040379d906f9e391302e41752584e3ac1ac3259fb1"
+  },
+  "mach-threads.pdf": {
+    "url": "https://ftp.nice.ch/peanuts/GeneralData/Documents/mach/_threads.pdf",
+    "sha256": "6e69d3b26a4fd8efc7b3dc1f7e202510b3ea761498afd1f2f7de31e2bce48908"
+  },
+  "NEXTSTEP-3.3-SPARC-libsys_s.B.shlib": {
+    "sha256": "6f0193d63e48a4539533366ad0a400a06f3e06ccb45e71e8a547fb1388ccac6f",
+    "finding": "spin_lock after contention: ldub [%o0], %o1; orcc %o0, %g0, %g0; bne loops while address is nonzero",
+    "code_addresses": [
+      "0x050084b8",
+      "0x050084c8",
+      "0x050084cc",
+      "0x050084d0"
+    ]
+  },
+  "NeXT-libc-34.1/threads/cthreads.c": {
+    "sha256": "fad38a5661a5a4ea581ed3d6f9405d407e66e4efded29f6ba712285e1247de59"
+  },
+  "NeXT-libc-34.1/threads/cprocs.c": {
+    "sha256": "93207395f32d3cb06c4c08461235f1595a933ec21ba66b955daaeb57d8e33c0d"
+  },
+  "NeXT-libc-34.1/threads/stack.c": {
+    "sha256": "3c96b49f3796392d2857e186fd605af1657ecd56d31bb77b6c0ebcd1fe5d3948"
+  }
+}

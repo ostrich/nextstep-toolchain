@@ -1,0 +1,15 @@
+{
+  "version": "1.2.6",
+  "url": "https://musl.libc.org/releases/musl-1.2.6.tar.gz",
+  "archive_sha256": "d585fd3b613c66151fc3249e8ed44f77020cb5e6c1e635a616d3f9f82460512a",
+  "files_sha256": {
+    "regcomp.c": "56b0a765e084a5cd3ed7113a893b50d259265ba76b6bea98889c45d7aec302a0",
+    "regexec.c": "072e8a1092c98830b48e784fb74ce486f7c39e27207f79f1dd161e2c5d86ba77",
+    "regerror.c": "72b3ab9c63c88c43aa37c4a4d4a89d07f892f42cbbf8801806b7b40135466bb9",
+    "tre-mem.c": "4721979ce365a395fd7644335c847a8a97913e87f14348641f7f199b57b93e28",
+    "tre.h": "e734e68decc33b5ee983db12cabcbdd2589c2d16088677228087b0e5dc365cf3",
+    "COPYRIGHT": "b870108ec5e7790e9f9919064f1b9421d62d5f9b0e6c230c6adf7ea2da62e97b",
+    "upstream-regex.h": "4acf94cf0e0f14b2eb50accac93fee886fcc4f821a9b7bb5347a5d035a027ad3"
+  },
+  "license": "musl MIT and TRE BSD-2-Clause; see COPYRIGHT and source notices"
+}

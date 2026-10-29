@@ -1,0 +1,3783 @@
+{
+  "schema": 1,
+  "targets": [
+    "i386",
+    "m68k",
+    "sparc",
+    "hppa"
+  ],
+  "note": "The following interface results are identical on all listed NEXTSTEP 3.3 targets. Untested does not mean unsupported.",
+  "upstream_commit": "7b95dfa5f5d5ca4d949221e0228ccc290bacc14e",
+  "toolchain_manifest_sha256": "a4cdce0978a53fb92a5978769d2a80f3b0860266b81cdb1a6614386cc1d6ada9",
+  "inventory_sha256": "e9267bed28e047dbf94782de6782691dec3cc2d393b14116e79f2e241de0792a",
+  "guest_logs_sha256": {
+    "i386": "1f5118dbce9f02fe8cf160c2dab57001ced6c2d8979b51995cd117e30394bfeb",
+    "m68k": "ab71fc65bfd7cfab0bd8ebc799b4bb39efc73be15ced3dfa15d903d15647df08",
+    "sparc": "123ba96eb3050d15c2915373ec37ed8676147dd558305b5d3646d8e776f6a578",
+    "hppa": "35de2e4c4b91a943dbb9384b5883dac4d23ad3572b10c7f1aa2d7143bcdff4e8"
+  },
+  "interfaces": [
+    {
+      "name": "memcpy",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "memmove",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "memset",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "memcmp",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "memchr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strcpy",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strncpy",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strcat",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strncat",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strcmp",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strncmp",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strchr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strrchr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strspn",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strcspn",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "working natively",
+          "behavior": "passed"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "working natively",
+          "behavior": "passed"
+        }
+      }
+    },
+    {
+      "name": "strpbrk",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strstr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        }
+      }
+    },
+    {
+      "name": "strtok",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strlen",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strerror",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strcoll",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strxfrm",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strdup",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strndup",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strnlen",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtok_r",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strerror_r",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "atoi",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "atol",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtol",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        }
+      }
+    },
+    {
+      "name": "strtoul",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtod",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "working with compatibility",
+          "behavior": "passed"
+        }
+      }
+    },
+    {
+      "name": "atoll",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtoll",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtoull",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtof",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtold",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtoimax",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strtoumax",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "imaxabs",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "imaxdiv",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "malloc",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "calloc",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "realloc",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "free",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "abort",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "exit",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "atexit",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "getenv",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "system",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "bsearch",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "qsort",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "working natively",
+          "behavior": "passed"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "working natively",
+          "behavior": "passed"
+        }
+      }
+    },
+    {
+      "name": "_Exit",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "posix_memalign",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "setenv",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "unsetenv",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "realpath",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mkstemp",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "printf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        }
+      }
+    },
+    {
+      "name": "sprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "vprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "vfprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "vsprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "scanf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fscanf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sscanf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        }
+      }
+    },
+    {
+      "name": "fopen",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fclose",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fflush",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fread",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fwrite",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fseek",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "ftell",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "tmpfile",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "remove",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "rename",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "ungetc",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "broken",
+          "behavior": "failed"
+        }
+      }
+    },
+    {
+      "name": "snprintf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "working with compatibility",
+          "behavior": "passed"
+        }
+      }
+    },
+    {
+      "name": "vsnprintf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "vscanf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "vfscanf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "vsscanf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "getline",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "getdelim",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fseeko",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "ftello",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fdopen",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fileno",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": true,
+          "classification": "partially supported",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": true,
+          "classification": "partially supported",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mbrlen",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mbrtowc",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcrtomb",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mbsrtowcs",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcsrtombs",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mbsinit",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcslen",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcscmp",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcscpy",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcschr",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wmemcpy",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wmemmove",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wmemcmp",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wmemset",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcstol",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcstoul",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcstoll",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcstoull",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcstod",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcstof",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "wcstold",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "iswalpha",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "iswspace",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "towlower",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "towupper",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigemptyset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigfillset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigaddset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigdelset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigismember",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigaction",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigprocmask",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigpending",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sigsuspend",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "stat",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "lstat",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fstat",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mkdir",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mkfifo",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "chmod",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fchmod",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "access",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "read",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "write",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "close",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "unlink",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "rmdir",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "readlink",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "symlink",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "link",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fsync",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "ftruncate",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "pread",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "pwrite",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "opendir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "readdir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "closedir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "rewinddir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "dirfd",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "fork",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "execve",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "getpid",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "getuid",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "getgid",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "getgroups",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "sysconf",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "time",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "clock",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "difftime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "mktime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "localtime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "gmtime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "strftime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "localtime_r",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "gmtime_r",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "clock_gettime",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "clock_getres",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "nanosleep",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "regcomp",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "regexec",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "regerror",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    },
+    {
+      "name": "regfree",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex",
+      "modes": {
+        "native": {
+          "declaration": "failed",
+          "link": "failed",
+          "macro": false,
+          "classification": "missing",
+          "behavior": "untested"
+        },
+        "compat": {
+          "declaration": "present",
+          "link": "present",
+          "macro": false,
+          "classification": "untested",
+          "behavior": "untested"
+        }
+      }
+    }
+  ]
+}

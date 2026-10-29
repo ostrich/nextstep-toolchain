@@ -1,0 +1,17 @@
+--- a/gcc/config/i386/nextstep.h
++++ b/gcc/config/i386/nextstep.h
+@@ -4,6 +4,14 @@
+ 
+ #undef TARGET_SUBTARGET_DEFAULT
+ #define TARGET_SUBTARGET_DEFAULT (MASK_80387 | MASK_IEEE_FP | MASK_FLOAT_RETURNS)
++
++/* DWARF uses the standard i386 register numbering. The historical stabs
++   map swaps ESP/EBP and numbers x87 registers differently. Keep the old map
++   outside DWARF generation, including non-debug compiler support builds. */
++#undef DEBUGGER_REGNO
++#define DEBUGGER_REGNO(N) \
++  (dwarf_debuginfo_p () ? svr4_debugger_register_map[(N)] \
++                       : debugger_register_map[(N)])
+ 
+ #define NEXTSTEP_STRUCT_VALUE_REGNUM BX_REG
+ #define TARGET_STRUCT_VALUE_RTX ix86_nextstep_struct_value_rtx

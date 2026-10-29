@@ -1,0 +1,78 @@
+--- a/vfprintf.c
++++ b/vfprintf.c
+@@ -15,11 +15,13 @@
+ #define MAX(a,b) ((a)>(b) ? (a) : (b))
+ #define MIN(a,b) ((a)<(b) ? (a) : (b))
+ 
+-/* Bounded output only. Native FILE internals and libc locks are not used. */
++/* Buffer formatting and a native-stream output bridge. */
++extern size_t ns33_stream_write(FILE *, const char *, size_t);
+ struct format_stream {
+   char *cursor;
+   size_t available;
+   int error;
++  FILE *file;
+ };
+ #define NL_ARGMAX 9
+ 
+@@ -162,6 +164,10 @@
+ 
+ static void out(struct format_stream *f, const char *text, size_t length)
+ {
++  if (f->file) {
++    if (!f->error && ns33_stream_write(f->file, text, length) != length) f->error = 1;
++    return;
++  }
+   size_t count = length < f->available ? length : f->available;
+   if (count) {
+     memcpy(f->cursor, text, count);
+@@ -702,7 +708,7 @@
+   va_list copy;
+   int types[NL_ARGMAX + 1] = {0};
+   union arg values[NL_ARGMAX + 1];
+-  struct format_stream stream = {buffer, size ? size - 1 : 0, 0};
++  struct format_stream stream = {buffer, size ? size - 1 : 0, 0, 0};
+   int result;
+   va_copy(copy, arguments);
+   result = printf_core(0, format, &copy, values, types);
+@@ -722,3 +728,40 @@
+   va_end(arguments);
+   return result;
+ }
++
++/* Public stream interfaces retain the native FILE ABI and buffering. */
++int ns33_vfprintf(FILE *file, const char *format, va_list arguments)
++{
++  va_list copy;
++  int types[NL_ARGMAX + 1] = {0};
++  union arg values[NL_ARGMAX + 1];
++  struct format_stream stream = {0, 0, 0, file};
++  int result;
++  va_copy(copy, arguments);
++  result = printf_core(0, format, &copy, values, types);
++  if (result >= 0) result = printf_core(&stream, format, &copy, values, types);
++  va_end(copy);
++  return stream.error ? -1 : result;
++}
++int ns33_fprintf(FILE *file, const char *format, ...)
++{
++  va_list args;
++  int result;
++  va_start(args, format);
++  result = ns33_vfprintf(file, format, args);
++  va_end(args);
++  return result;
++}
++int ns33_vprintf(const char *format, va_list args)
++{
++  return ns33_vfprintf(stdout, format, args);
++}
++int ns33_printf(const char *format, ...)
++{
++  va_list args;
++  int result;
++  va_start(args, format);
++  result = ns33_vfprintf(stdout, format, args);
++  va_end(args);
++  return result;
++}

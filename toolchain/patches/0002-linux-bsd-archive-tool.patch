@@ -1,0 +1,66 @@
+--- a/ar/archive.c
++++ b/ar/archive.c
+@@ -68,6 +68,7 @@
+ 
+ #include <sys/param.h>
+ #include <sys/stat.h>
++#include <sys/file.h>
+ 
+ #include <ar.h>
+ #include <dirent.h>
+@@ -166,7 +167,9 @@
+ 		/* Locking seems to not be working */
+ 		case ENOTSUP:
+ 		case EHOSTUNREACH:
++		#ifdef EBADRPC
+ 		case EBADRPC:
++		#endif
+ 		default:
+ 			/* Filesystem does not support locking */
+ 			break;
+@@ -324,7 +327,7 @@
+ 		 * things for exact binary equality.
+ 		 */
+ 		if (getenv("ZERO_AR_DATE") == NULL)
+-			tv_sec = (long int)sb->st_mtimespec.tv_sec;
++			tv_sec = (long int)sb->st_mtime;
+ 		else
+ 			tv_sec = (long int)0;
+ 
+@@ -343,7 +346,7 @@
+ 			(void)sprintf(hb, HDR3, name, (long int)tv_sec,
+ 			    (unsigned int)(u_short)sb->st_uid,
+ 			    (unsigned int)(u_short)sb->st_gid,
+-			    sb->st_mode, sb->st_size, ARFMAG);
++			    sb->st_mode, (long long)sb->st_size, ARFMAG);
+ 			lname = 0;
+ 		} else if (lname > sizeof(hdr->ar_name) || strchr(name, ' '))
+ 			(void)sprintf(hb, HDR1, AR_EFMT1,
+@@ -351,14 +354,14 @@
+ 			    (long int)tv_sec,
+ 			    (unsigned int)(u_short)sb->st_uid,
+ 			    (unsigned int)(u_short)sb->st_gid,
+-			    sb->st_mode, sb->st_size + ((lname + 3) & ~3),
++			    sb->st_mode, (long long)(sb->st_size + ((lname + 3) & ~3)),
+ 			    ARFMAG);
+ 		else {
+ 			lname = 0;
+ 			(void)sprintf(hb, HDR2, name, (long int)tv_sec,
+ 			    (unsigned int)(u_short)sb->st_uid,
+ 			    (unsigned int)(u_short)sb->st_gid,
+-			    sb->st_mode, sb->st_size, ARFMAG);
++			    sb->st_mode, (long long)sb->st_size, ARFMAG);
+ 		}
+ 		size = sb->st_size;
+ 	} else {
+--- a/ar/contents.c
++++ b/ar/contents.c
+@@ -104,7 +104,7 @@
+ 		if (options & AR_V) {
+ 			(void)strmode(chdr.mode, buf);
+ 			(void)printf("%s %6d/%-6d %8qd ",
+-			    buf + 1, chdr.uid, chdr.gid, chdr.size);
++			    buf + 1, chdr.uid, chdr.gid, (long long)chdr.size);
+ 			tp = localtime(&chdr.date);
+ 			(void)strftime(buf, sizeof(buf), "%b %e %H:%M %Y", tp);
+ 			(void)printf("%s %s\n", buf, file);

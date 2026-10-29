@@ -1,0 +1,104 @@
+--- a/log2.c
++++ b/log2.c
+@@ -7,15 +7,15 @@
+ 
+ #include <math.h>
+ #include <stdint.h>
+-#include "libm.h"
++#include "math-support.h"
+ #include "log2_data.h"
+ 
+-#define T __log2_data.tab
+-#define T2 __log2_data.tab2
+-#define B __log2_data.poly1
+-#define A __log2_data.poly
+-#define InvLn2hi __log2_data.invln2hi
+-#define InvLn2lo __log2_data.invln2lo
++#define T ns33_log2_data.tab
++#define T2 ns33_log2_data.tab2
++#define B ns33_log2_data.poly1
++#define A ns33_log2_data.poly
++#define InvLn2hi ns33_log2_data.invln2hi
++#define InvLn2lo ns33_log2_data.invln2lo
+ #define N (1 << LOG2_TABLE_BITS)
+ #define OFF 0x3fe6000000000000
+ 
+@@ -25,7 +25,7 @@
+ 	return asuint64(x) >> 48;
+ }
+ 
+-double log2(double x)
++double ns33_log2(double x)
+ {
+ 	double_t z, r, r2, r4, y, invc, logc, kd, hi, lo, t1, t2, t3, p;
+ 	uint64_t ix, iz, tmp;
+@@ -66,11 +66,11 @@
+ 	if (predict_false(top - 0x0010 >= 0x7ff0 - 0x0010)) {
+ 		/* x < 0x1p-1022 or inf or nan.  */
+ 		if (ix * 2 == 0)
+-			return __math_divzero(1);
++			return ns33_math_divzero(1);
+ 		if (ix == asuint64(INFINITY)) /* log(inf) == inf.  */
+ 			return x;
+ 		if ((top & 0x8000) || (top & 0x7ff0) == 0x7ff0)
+-			return __math_invalid(x);
++			return ns33_math_invalid(x);
+ 		/* x is subnormal, normalize it.  */
+ 		ix = asuint64(x * 0x1p52);
+ 		ix -= 52ULL << 52;
+--- a/log2_data.c
++++ b/log2_data.c
+@@ -9,7 +9,7 @@
+ 
+ #define N (1 << LOG2_TABLE_BITS)
+ 
+-const struct log2_data __log2_data = {
++const struct log2_data ns33_log2_data = {
+ // First coefficient: 0x1.71547652b82fe1777d0ffda0d24p0
+ .invln2hi = 0x1.7154765200000p+0,
+ .invln2lo = 0x1.705fc2eefa200p-33,
+--- a/log2_data.h
++++ b/log2_data.h
+@@ -5,12 +5,12 @@
+ #ifndef _LOG2_DATA_H
+ #define _LOG2_DATA_H
+ 
+-#include <features.h>
++
+ 
+ #define LOG2_TABLE_BITS 6
+ #define LOG2_POLY_ORDER 7
+ #define LOG2_POLY1_ORDER 11
+-extern hidden const struct log2_data {
++extern const struct log2_data {
+ 	double invln2hi;
+ 	double invln2lo;
+ 	double poly[LOG2_POLY_ORDER - 1];
+@@ -23,6 +23,6 @@
+ 		double chi, clo;
+ 	} tab2[1 << LOG2_TABLE_BITS];
+ #endif
+-} __log2_data;
++} ns33_log2_data;
+ 
+ #endif
+--- a/fmin.c
++++ b/fmin.c
+@@ -1,6 +1,6 @@
+ #include <math.h>
+ 
+-double fmin(double x, double y)
++double ns33_fmin(double x, double y)
+ {
+ 	if (isnan(x))
+ 		return y;
+--- a/fmax.c
++++ b/fmax.c
+@@ -1,6 +1,6 @@
+ #include <math.h>
+ 
+-double fmax(double x, double y)
++double ns33_fmax(double x, double y)
+ {
+ 	if (isnan(x))
+ 		return y;

@@ -1,0 +1,195 @@
+--- a/vfprintf.c
++++ b/vfprintf.c
+@@ -1,4 +1,4 @@
+-#include "stdio_impl.h"
++#include <stdio.h>
+ #include <errno.h>
+ #include <ctype.h>
+ #include <limits.h>
+@@ -6,8 +6,7 @@
+ #include <stdarg.h>
+ #include <stddef.h>
+ #include <stdlib.h>
+-#include <wchar.h>
+-#include <inttypes.h>
++#include <stdint.h>
+ #include <math.h>
+ #include <float.h>
+ 
+@@ -15,6 +14,37 @@
+ 
+ #define MAX(a,b) ((a)>(b) ? (a) : (b))
+ #define MIN(a,b) ((a)<(b) ? (a) : (b))
++
++/* Bounded output only. Native FILE internals and libc locks are not used. */
++struct format_stream {
++  char *cursor;
++  size_t available;
++  int error;
++};
++#define NL_ARGMAX 9
++
++static size_t format_strnlen(const char *text, size_t limit)
++{
++  size_t length = 0;
++  while (length != limit && text[length]) ++length;
++  return length;
++}
++
++/* Scaling by powers of two is exact, including subnormal inputs. Avoid
++   narrowing extended precision through the original double-only libc. */
++static long double format_frexpl(long double value, int *exponent)
++{
++  int shift = 0;
++  int negative = signbit(value);
++  if (!value || !isfinite(value)) { *exponent = 0; return value; }
++  if (negative) value = -value;
++  while (value >= 0x1p32L) { value *= 0x1p-32L; shift += 32; }
++  while (value < 0x1p-32L) { value *= 0x1p32L; shift -= 32; }
++  while (value >= 1.0L) { value *= 0.5L; ++shift; }
++  while (value < 0.5L) { value *= 2.0L; --shift; }
++  *exponent = shift;
++  return negative ? -value : value;
++}
+ 
+ /* Convenient bit representation for modifier flags, which all fall
+  * within 31 codepoints of the space character. */
+@@ -130,12 +160,17 @@
+ 	}
+ }
+ 
+-static void out(FILE *f, const char *s, size_t l)
+-{
+-	if (!ferror(f)) __fwritex((void *)s, l, f);
+-}
+-
+-static void pad(FILE *f, char c, int w, int l, int fl)
++static void out(struct format_stream *f, const char *text, size_t length)
++{
++  size_t count = length < f->available ? length : f->available;
++  if (count) {
++    memcpy(f->cursor, text, count);
++    f->cursor += count;
++    f->available -= count;
++  }
++}
++
++static void pad(struct format_stream *f, char c, int w, int l, int fl)
+ {
+ 	char pad[256];
+ 	if (fl & (LEFT_ADJ | ZERO_PAD) || l >= w) return;
+@@ -177,7 +212,7 @@
+ typedef char compiler_defines_long_double_incorrectly[9-(int)sizeof(long double)];
+ #endif
+ 
+-static int fmt_fp(FILE *f, long double y, int w, int p, int fl, int t)
++static int fmt_fp(struct format_stream *f, long double y, int w, int p, int fl, int t)
+ {
+ 	uint32_t big[(LDBL_MANT_DIG+28)/29 + 1          // mantissa expansion
+ 		+ (LDBL_MAX_EXP+LDBL_MANT_DIG+28+8)/9]; // exponent expansion
+@@ -207,7 +242,7 @@
+ 		return MAX(w, 3+pl);
+ 	}
+ 
+-	y = frexpl(y, &e2) * 2;
++	y = format_frexpl(y, &e2) * 2;
+ 	if (y) e2--;
+ 
+ 	if ((t|32)=='a') {
+@@ -427,7 +462,7 @@
+ 	return i;
+ }
+ 
+-static int printf_core(FILE *f, const char *fmt, va_list *ap, union arg *nl_arg, int *nl_type)
++static int printf_core(struct format_stream *f, const char *fmt, va_list *ap, union arg *nl_arg, int *nl_type)
+ {
+ 	char *a, *z, *s=(char *)fmt;
+ 	unsigned l10n=0, fl;
+@@ -531,7 +566,7 @@
+ 		if (!f) continue;
+ 
+ 		/* Do not process any new directives once in error state. */
+-		if (ferror(f)) return -1;
++		if (f->error) return -1;
+ 
+ 		z = buf + sizeof(buf);
+ 		prefix = "-+   0X0x";
+@@ -597,7 +632,7 @@
+ 			if (1) a = strerror(errno); else
+ 		case 's':
+ 			a = arg.p ? arg.p : "(null)";
+-			z = a + strnlen(a, p<0 ? INT_MAX : p);
++			z = a + format_strnlen(a, p<0 ? INT_MAX : p);
+ 			if (p<0 && *z) goto overflow;
+ 			p = z-a;
+ 			fl &= ~ZERO_PAD;
+@@ -661,43 +696,29 @@
+ 	return -1;
+ }
+ 
+-int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
+-{
+-	va_list ap2;
+-	int nl_type[NL_ARGMAX+1] = {0};
+-	union arg nl_arg[NL_ARGMAX+1];
+-	unsigned char internal_buf[80], *saved_buf = 0;
+-	int olderr;
+-	int ret;
+-
+-	/* the copy allows passing va_list* even if va_list is an array */
+-	va_copy(ap2, ap);
+-	if (printf_core(0, fmt, &ap2, nl_arg, nl_type) < 0) {
+-		va_end(ap2);
+-		return -1;
+-	}
+-
+-	FLOCK(f);
+-	olderr = f->flags & F_ERR;
+-	f->flags &= ~F_ERR;
+-	if (!f->buf_size) {
+-		saved_buf = f->buf;
+-		f->buf = internal_buf;
+-		f->buf_size = sizeof internal_buf;
+-		f->wpos = f->wbase = f->wend = 0;
+-	}
+-	if (!f->wend && __towrite(f)) ret = -1;
+-	else ret = printf_core(f, fmt, &ap2, nl_arg, nl_type);
+-	if (saved_buf) {
+-		f->write(f, 0, 0);
+-		if (!f->wpos) ret = -1;
+-		f->buf = saved_buf;
+-		f->buf_size = 0;
+-		f->wpos = f->wbase = f->wend = 0;
+-	}
+-	if (ferror(f)) ret = -1;
+-	f->flags |= olderr;
+-	FUNLOCK(f);
+-	va_end(ap2);
+-	return ret;
+-}
++int vsnprintf(char *restrict buffer, size_t size, const char *restrict format,
++              va_list arguments)
++{
++  va_list copy;
++  int types[NL_ARGMAX + 1] = {0};
++  union arg values[NL_ARGMAX + 1];
++  struct format_stream stream = {buffer, size ? size - 1 : 0, 0};
++  int result;
++  va_copy(copy, arguments);
++  result = printf_core(0, format, &copy, values, types);
++  if (result >= 0)
++    result = printf_core(&stream, format, &copy, values, types);
++  if (size) *stream.cursor = 0;
++  va_end(copy);
++  return result;
++}
++
++int snprintf(char *restrict buffer, size_t size, const char *restrict format, ...)
++{
++  int result;
++  va_list arguments;
++  va_start(arguments, format);
++  result = vsnprintf(buffer, size, format, arguments);
++  va_end(arguments);
++  return result;
++}

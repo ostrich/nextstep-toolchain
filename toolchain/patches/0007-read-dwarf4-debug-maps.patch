@@ -1,0 +1,259 @@
+--- a/ld/dwarf2.h
++++ b/ld/dwarf2.h
+@@ -59,7 +59,11 @@
+   DW_FORM_ref4,
+   DW_FORM_ref8,
+   DW_FORM_ref_udata,
+-  DW_FORM_indirect /* 22 */
++  DW_FORM_indirect, /* 22 */
++  DW_FORM_sec_offset,
++  DW_FORM_exprloc,
++  DW_FORM_flag_present,
++  DW_FORM_ref_sig8 = 0x20
+ };
+ 
+ enum {
+--- a/ld/debugcompunit.c
++++ b/ld/debugcompunit.c
+@@ -31,20 +31,20 @@
+ /* Read in a word of fixed size, which may be unaligned, in the
+    appropriate endianness.  */
+ #define read_16(p) (little_endian		\
+-		    ? ((p)[1] << 8 | (p)[0])	\
+-		    : ((p)[0] << 8 | (p)[1]))
++		    ? ((uint32_t) (p)[1] << 8 | (p)[0])	\
++		    : ((uint32_t) (p)[0] << 8 | (p)[1]))
+ #define read_32(p) (little_endian					    \
+-		    ? ((p)[3] << 24 | (p)[2] << 16 | (p)[1] << 8 | (p)[0])  \
+-		    : ((p)[0] << 24 | (p)[1] << 16 | (p)[2] << 8 | (p)[3]))
++		    ? ((uint32_t) (p)[3] << 24 | (uint32_t) (p)[2] << 16 | (uint32_t) (p)[1] << 8 | (p)[0])  \
++		    : ((uint32_t) (p)[0] << 24 | (uint32_t) (p)[1] << 16 | (uint32_t) (p)[2] << 8 | (p)[3]))
+ #define read_64(p) (little_endian					    \
+ 		    ? ((uint64_t) (p)[7] << 56 | (uint64_t) (p)[6] << 48    \
+ 		       | (uint64_t) (p)[5] << 40 | (uint64_t) (p)[4] << 32  \
+-		       | (uint64_t) (p)[3] << 24 | (uint64_t) (p)[2] << 16u \
+-		       | (uint64_t) (p)[1] << 8 | (uint64_t) (p)[0])	    \
++		       | (uint64_t) (uint32_t) (p)[3] << 24 | (uint64_t) (uint32_t) (p)[2] << 16u \
++		       | (uint64_t) (uint32_t) (p)[1] << 8 | (uint64_t) (p)[0])	    \
+ 		    : ((uint64_t) (p)[0] << 56 | (uint64_t) (p)[1] << 48    \
+ 		       | (uint64_t) (p)[2] << 40 | (uint64_t) (p)[3] << 32  \
+-		       | (uint64_t) (p)[4] << 24 | (uint64_t) (p)[5] << 16u \
+-		       | (uint64_t) (p)[6] << 8 | (uint64_t) (p)[7]))
++		       | (uint64_t) (uint32_t) (p)[4] << 24 | (uint64_t) (uint32_t) (p)[5] << 16u \
++		       | (uint64_t) (uint32_t) (p)[6] << 8 | (uint64_t) (p)[7]))
+ 
+ /* Skip over a LEB128 value (signed or unsigned).  */
+ static void
+@@ -102,7 +102,7 @@
+     case DW_FORM_block4:
+       if (end - *offset < 4)
+ 	return FALSE;
+-      sz = 2 + read_32 (*offset);
++      sz = 4 + (uint64_t) read_32 (*offset);
+       break;
+       
+     case DW_FORM_data2:
+@@ -129,6 +129,7 @@
+       sz = 1;
+       break;
+       
++    case DW_FORM_exprloc:
+     case DW_FORM_block:
+       sz = read_uleb128 (offset, end);
+       break;
+@@ -145,6 +146,14 @@
+       skip_leb128 (offset, end);
+       return TRUE;
+       
++    case DW_FORM_flag_present:
++      return TRUE;
++
++    case DW_FORM_ref_sig8:
++      sz = 8;
++      break;
++
++    case DW_FORM_sec_offset:
+     case DW_FORM_strp:
+     case DW_FORM_ref_addr:
+       sz = dwarf64 ? 8 : 4;
+@@ -200,18 +209,22 @@
+   sz = read_32 (di);
+   di += 4;
+   dwarf64 = sz == 0xffffffff;
+-  if (dwarf64)
++  if (dwarf64) {
++    if (debug_info_size < 23)
++      return FALSE;
+     sz = read_64 (di), di += 8;
++  }
+   else if (sz > 0xffffff00)
+     /* Unknown dwarf format.  */
+     return FALSE;
+   
+   /* Verify claimed size.  */
+-  if (sz + (di - debug_info) > debug_info_size || sz <= (dwarf64 ? 23 : 11))
++  if (sz > debug_info_size - (di - debug_info)
++      || sz < (dwarf64 ? 12 : 8))
+     return FALSE;
+ 
+   vers = read_16 (di);
+-  if (vers < 2 || vers > 3)
++  if (vers < 2 || vers > 4)
+     /* DWARF version wrong for this code.
+        Chances are we could continue anyway, but we don't know for sure.  */
+     return FALSE;
+@@ -221,7 +234,7 @@
+   abbrev_base = dwarf64 ? read_64 (di) : read_32 (di);
+   di += dwarf64 ? 8 : 4;
+   
+-  if (abbrev_base > debug_abbrev_size)
++  if (abbrev_base >= debug_abbrev_size)
+     return FALSE;
+   da = debug_abbrev + abbrev_base;
+   enda = debug_abbrev + debug_abbrev_size;
+@@ -229,7 +242,7 @@
+   address_size = *di++;
+ 
+   /* Find the abbrev number we're looking for.  */
+-  end = di + sz;
++  end = debug_info + (dwarf64 ? 12 : 4) + sz;
+   abbrev = read_uleb128 (&di, end);
+   if (abbrev == (uint64_t) -1)
+     return FALSE;
+@@ -240,6 +253,8 @@
+       uint64_t this_abbrev = read_uleb128 (&da, enda);
+       uint64_t attr;
+       
++      if (this_abbrev == 0 || this_abbrev == (uint64_t) -1)
++        return FALSE;
+       if (this_abbrev == abbrev)
+ 	/* This is almost always taken.  */
+ 	break;
+@@ -270,7 +285,7 @@
+       uint64_t attr = read_uleb128 (&da, enda);
+       uint64_t form = read_uleb128 (&da, enda);
+ 
+-      if (attr == (uint64_t) -1)
++      if (attr == (uint64_t) -1 || form == (uint64_t) -1)
+ 	return FALSE;
+       else if (attr == 0)
+ 	return TRUE;
+@@ -278,19 +293,24 @@
+       if (form == DW_FORM_indirect)
+ 	form = read_uleb128 (&di, end);
+       
++      const uint8_t *value = di;
++      if (!skip_form (&di, end, form, address_size, dwarf64, little_endian))
++        return FALSE;
+       if (attr == DW_AT_name && form == DW_FORM_string)
+-	*name = (const char *) di;
++	*name = (const char *) value;
+       else if (attr == DW_AT_comp_dir && form == DW_FORM_string)
+-	*comp_dir = (const char *) di;
++	*comp_dir = (const char *) value;
+       /* Really we should support DW_FORM_strp here, too, but
+ 	 there's usually no reason for the producer to use that form
+          for the DW_AT_name and DW_AT_comp_dir attributes.  */
+-      else if (attr == DW_AT_stmt_list && form == DW_FORM_data4)
+-	*stmt_list = read_32 (di);
+-      else if (attr == DW_AT_stmt_list && form == DW_FORM_data8)
+-	*stmt_list = read_64 (di);
+-      if (! skip_form (&di, end, form, address_size, dwarf64, little_endian))
+-	return FALSE;
++      else if (attr == DW_AT_stmt_list
++               && (form == DW_FORM_data4
++                   || (form == DW_FORM_sec_offset && !dwarf64)))
++	*stmt_list = read_32 (value);
++      else if (attr == DW_AT_stmt_list
++               && (form == DW_FORM_data8
++                   || (form == DW_FORM_sec_offset && dwarf64)))
++	*stmt_list = read_64 (value);
+     }
+ }
+ #endif /* ! KLD */
+--- a/ld/debugline.c
++++ b/ld/debugline.c
+@@ -56,20 +56,20 @@
+ /* Read in a word of fixed size, which may be unaligned, in the
+    appropriate endianness.  */
+ #define read_16(p) (lnd->little_endian		\
+-		    ? ((p)[1] << 8 | (p)[0])	\
+-		    : ((p)[0] << 8 | (p)[1]))
++		    ? ((uint32_t) (p)[1] << 8 | (p)[0])	\
++		    : ((uint32_t) (p)[0] << 8 | (p)[1]))
+ #define read_32(p) (lnd->little_endian					    \
+-		    ? ((p)[3] << 24 | (p)[2] << 16 | (p)[1] << 8 | (p)[0])  \
+-		    : ((p)[0] << 24 | (p)[1] << 16 | (p)[2] << 8 | (p)[3]))
++		    ? ((uint32_t) (p)[3] << 24 | (uint32_t) (p)[2] << 16 | (uint32_t) (p)[1] << 8 | (p)[0])  \
++		    : ((uint32_t) (p)[0] << 24 | (uint32_t) (p)[1] << 16 | (uint32_t) (p)[2] << 8 | (p)[3]))
+ #define read_64(p) (lnd->little_endian					    \
+ 		    ? ((uint64_t) (p)[7] << 56 | (uint64_t) (p)[6] << 48    \
+ 		       | (uint64_t) (p)[5] << 40 | (uint64_t) (p)[4] << 32  \
+-		       | (uint64_t) (p)[3] << 24 | (uint64_t) (p)[2] << 16u \
+-		       | (uint64_t) (p)[1] << 8 | (uint64_t) (p)[0])	    \
++		       | (uint64_t) (uint32_t) (p)[3] << 24 | (uint64_t) (uint32_t) (p)[2] << 16u \
++		       | (uint64_t) (uint32_t) (p)[1] << 8 | (uint64_t) (p)[0])	    \
+ 		    : ((uint64_t) (p)[0] << 56 | (uint64_t) (p)[1] << 48    \
+ 		       | (uint64_t) (p)[2] << 40 | (uint64_t) (p)[3] << 32  \
+-		       | (uint64_t) (p)[4] << 24 | (uint64_t) (p)[5] << 16u \
+-		       | (uint64_t) (p)[6] << 8 | (uint64_t) (p)[7]))
++		       | (uint64_t) (uint32_t) (p)[4] << 24 | (uint64_t) (uint32_t) (p)[5] << 16u \
++		       | (uint64_t) (uint32_t) (p)[6] << 8 | (uint64_t) (p)[7]))
+ 
+ /* Skip over a LEB128 value (signed or unsigned).  */
+ static void
+@@ -195,6 +195,7 @@
+ {
+   struct line_reader_data * lnd = NULL;
+   enum bool dwarf_size_64;
++  uint16_t version;
+ 
+   uint64_t lnd_length, header_length;
+   const uint8_t * table_start;
+@@ -202,7 +203,7 @@
+   if (debug_line_size < 12)
+     return NULL;
+   
+-  lnd = malloc (sizeof (struct line_reader_data));
++  lnd = calloc (1, sizeof (struct line_reader_data));
+   if (! lnd)
+     goto error;
+   
+@@ -228,7 +229,8 @@
+     /* Too small.  */
+     goto error;
+   
+-  if (read_16 (lnd->cpos) != 2)
++  version = read_16 (lnd->cpos);
++  if (version < 2 || version > 4)
+     /* Unknown line number format.  */
+     goto error;
+   lnd->cpos += 2;
+@@ -239,7 +241,16 @@
+       || header_length < 7)
+     goto error;
+ 
+-  lnd->minimum_instruction_length = lnd->cpos[0];
++  /* DWARF 4 adds maximum_operations_per_instruction.  These NeXT CPUs
++     use one operation per instruction; reject VLIW line programs. */
++  if (version >= 4) {
++    if (header_length < 8 || lnd->cpos[1] != 1)
++      goto error;
++    lnd->minimum_instruction_length = lnd->cpos[0];
++    lnd->cpos++;
++    header_length--;
++  } else
++    lnd->minimum_instruction_length = lnd->cpos[0];
+   /* Ignore default_is_stmt.  */
+   lnd->line_base = lnd->cpos[2];
+   lnd->line_range = lnd->cpos[3];
+@@ -255,7 +266,8 @@
+     /* Header not long enough.  */
+     goto error;
+   lnd->cpos += 5 + lnd->opcode_base - 1;
+-  lnd->end = debug_line + header_length + (dwarf_size_64 ? 22 : 10);
++  lnd->end = debug_line + header_length + (version >= 4 ? 1 : 0)
++             + (dwarf_size_64 ? 22 : 10);
+   
+   /* Make table of offsets to directory names.  */
+   table_start = lnd->cpos;

@@ -1,0 +1,10 @@
+{
+  "name": "musl",
+  "version": "1.2.6",
+  "url": "https://musl.libc.org/releases/musl-1.2.6.tar.gz",
+  "archive_sha256": "d585fd3b613c66151fc3249e8ed44f77020cb5e6c1e635a616d3f9f82460512a",
+  "files_sha256": {
+    "inet_pton.c": "32a7094a7dc9eea10d067f5fcafbcf2651b86c459ff89cd3cd3f7b7f16e58bbe",
+    "inet_ntop.c": "3e5ebbbb8f4bbd2e113c3eb23d6cbb1c5b7f0d9036c1aa5d182322cc9a5b68f7"
+  }
+}

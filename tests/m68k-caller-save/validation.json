@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-21",
+  "target": "NEXTSTEP 3.3 m68k",
+  "native_compiler": "GCC 2.5.8",
+  "cross_compiler": "GCC 16.2",
+  "optimization": "-O2",
+  "results": {
+    "native": {
+      "exit": 0,
+      "passes": 4
+    },
+    "unfixed": {
+      "exit": 1,
+      "passes": 1,
+      "expected_failures": 3
+    },
+    "caller_saves_disabled": {
+      "exit": 0,
+      "passes": 4
+    },
+    "patched": {
+      "exit": 0,
+      "passes": 4
+    }
+  },
+  "native_halt": true,
+  "fsck": {
+    "disk.img": 0
+  },
+  "log_sha256": "1d88170e4b09773c812e83ad559fa9ccb40935568c1a26aa020b980efb23ee48",
+  "source_sha256": {
+    "layout.c": "6208df331599ab279a511837b8e451cebe94e389eec69f4527a7dbdf1067a813",
+    "check.c": "b28f6fedfd8a737a4aafca5fe039b67337c82b37b0754d9518b4c84bdd70a930"
+  },
+  "canonical_snapshot_promoted": true,
+  "promoted_manifest_sha256": "5f965b7f3249ceb37ace506162754dd524269067d1ec58e89c9cdf53a2cc379f",
+  "promotion_record": "promotion.json"
+}

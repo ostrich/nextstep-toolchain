@@ -1,0 +1,140 @@
+--- a/gcc/config/nextstep.h
++++ b/gcc/config/nextstep.h
+@@ -52,8 +52,30 @@
+ #undef SUPPORTS_INIT_PRIORITY
+ #define SUPPORTS_INIT_PRIORITY 0
+ 
+-/* Debug format restoration is a separate porting stage.  */
+-#define PREFERRED_DEBUGGING_TYPE NO_DEBUG
++/* Modern source debugging uses DWARF in non-allocatable Mach-O sections.
++   Keep ordinary application named sections disabled: those require separate
++   target placement rules, while the debug writer uses the named-section hook. */
++#define DWARF2_DEBUGGING_INFO 1
++#undef DWARF_VERSION_DEFAULT
++#define DWARF_VERSION_DEFAULT 4
++#define DWARF2_ASM_LINE_DEBUG_INFO 0
++#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
++#define TARGET_ASM_NAMED_SECTION nextstep_asm_named_section
++#define DEBUG_FRAME_SECTION "__DWARF,__debug_frame,regular,debug"
++#define DEBUG_INFO_SECTION "__DWARF,__debug_info,regular,debug"
++#define DEBUG_ABBREV_SECTION "__DWARF,__debug_abbrev,regular,debug"
++#define DEBUG_ARANGES_SECTION "__DWARF,__debug_aranges,regular,debug"
++#define DEBUG_MACINFO_SECTION "__DWARF,__debug_macinfo,regular,debug"
++#define DEBUG_LINE_SECTION "__DWARF,__debug_line,regular,debug"
++#define DEBUG_LOC_SECTION "__DWARF,__debug_loc,regular,debug"
++#define DEBUG_LOCLISTS_SECTION "__DWARF,__debug_loclists,regular,debug"
++#define DEBUG_STR_SECTION "__DWARF,__debug_str,regular,debug"
++#define DEBUG_STR_OFFSETS_SECTION "__DWARF,__debug_str_offs,regular,debug"
++#define DEBUG_RANGES_SECTION "__DWARF,__debug_ranges,regular,debug"
++#define DEBUG_RNGLISTS_SECTION "__DWARF,__debug_rnglists,regular,debug"
++#define DEBUG_MACRO_SECTION "__DWARF,__debug_macro,regular,debug"
++#define DEBUG_PUBNAMES_SECTION "__DWARF,__debug_pubnames,regular,debug"
++#define DEBUG_PUBTYPES_SECTION "__DWARF,__debug_pubtypes,regular,debug"
+ 
+ #undef ASM_OUTPUT_MAX_SKIP_ALIGN
+ #undef ASM_QUAD
+@@ -109,3 +131,9 @@
+ #define ASM_WEAKEN_DECL(FILE, DECL, NAME, ALIAS) \
+   nextstep_asm_weaken_decl (FILE, DECL, NAME, ALIAS)
+ #define TARGET_ASM_FUNCTION_SECTION nextstep_function_section
++
++/* Mach-O debug sections do not have ELF section-relative relocations. */
++#define ASM_OUTPUT_DWARF_DELTA(FILE, SIZE, LABEL1, LABEL2) \
++  nextstep_asm_output_dwarf_delta (FILE, SIZE, LABEL1, LABEL2, 0)
++#define ASM_OUTPUT_DWARF_OFFSET(FILE, SIZE, LABEL, OFFSET, BASE) \
++  nextstep_asm_output_dwarf_offset (FILE, SIZE, LABEL, OFFSET, BASE)
+--- a/gcc/config/nextstep.cc
++++ b/gcc/config/nextstep.cc
+@@ -194,3 +194,57 @@
+                floor_log2 (align / BITS_PER_UNIT));
+     }
+ }
++
++/* DWARF output names include the Mach-O segment and section attributes.
++   Do not pass ELF named-section syntax to the historical assembler. */
++void
++nextstep_asm_named_section (const char *name, unsigned int flags,
++                           tree decl ATTRIBUTE_UNUSED)
++{
++  if (!(flags & SECTION_DEBUG) || strncmp (name, "__DWARF,", 8))
++    {
++      error ("unsupported NEXTSTEP named section %qs", name);
++      return;
++    }
++  fprintf (asm_out_file, "\t.section %s\n", name);
++  if (!(flags & SECTION_DECLARED))
++    {
++      const char *start = name + 8;
++      const char *end = strchr (start, ',');
++      gcc_assert (end);
++      fprintf (asm_out_file, "Lns33section%.*s:\n", (int) (end - start), start);
++    }
++}
++
++/* Assignment forces an assembly-time constant even when a local label is
++   exactly at a section boundary.  Plain subtraction can instead acquire an
++   incorrect section-difference relocation in the Mach-O assembler. */
++void
++nextstep_asm_output_dwarf_delta (FILE *file, int size, const char *first,
++                                const char *second, HOST_WIDE_INT offset)
++{
++  static unsigned int serial;
++  const char *directive = size == 1 ? ".byte" : size == 2 ? ".short"
++                          : size == 4 ? ".long" : ".quad";
++  fprintf (file, "\t.set Lns33delta%u,", serial);
++  assemble_name_raw (file, first);
++  fputc ('-', file);
++  assemble_name_raw (file, second);
++  if (offset)
++    fprintf (file, "+" HOST_WIDE_INT_PRINT_DEC, offset);
++  fprintf (file, "\n\t%s Lns33delta%u", directive, serial++);
++}
++
++void
++nextstep_asm_output_dwarf_offset (FILE *file, int size, const char *label,
++                                 HOST_WIDE_INT offset, section *base)
++{
++  gcc_assert (base->common.flags & SECTION_NAMED);
++  const char *start = base->named.name + 8;
++  const char *end = strchr (start, ',');
++  gcc_assert (end && !strncmp (base->named.name, "__DWARF,", 8));
++  char section_label[64];
++  snprintf (section_label, sizeof section_label, "*Lns33section%.*s",
++            (int) (end - start), start);
++  nextstep_asm_output_dwarf_delta (file, size, label, section_label, offset);
++}
+--- a/gcc/config/nextstep-protos.h
++++ b/gcc/config/nextstep-protos.h
+@@ -9,3 +9,6 @@
+ extern void nextstep_asm_out_destructor (rtx, int);
+ #endif
+ extern void nextstep_output_aligned_bss (FILE *, tree, const char *, unsigned HOST_WIDE_INT, unsigned HOST_WIDE_INT);
++extern void nextstep_asm_named_section (const char *, unsigned int, tree);
++extern void nextstep_asm_output_dwarf_delta (FILE *, int, const char *, const char *, HOST_WIDE_INT);
++extern void nextstep_asm_output_dwarf_offset (FILE *, int, const char *, HOST_WIDE_INT, section *);
+--- a/gcc/config/sparc/sparc.cc
++++ b/gcc/config/sparc/sparc.cc
+@@ -743,11 +743,23 @@
+ #define TARGET_ASM_ALIGNED_HI_OP "\t.half\t"
+ 
+ #undef TARGET_ASM_UNALIGNED_HI_OP
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++#define TARGET_ASM_UNALIGNED_HI_OP "\t.short\t"
++#else
+ #define TARGET_ASM_UNALIGNED_HI_OP "\t.uahalf\t"
++#endif
+ #undef TARGET_ASM_UNALIGNED_SI_OP
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++#define TARGET_ASM_UNALIGNED_SI_OP "\t.long\t"
++#else
+ #define TARGET_ASM_UNALIGNED_SI_OP "\t.uaword\t"
++#endif
+ #undef TARGET_ASM_UNALIGNED_DI_OP
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++#define TARGET_ASM_UNALIGNED_DI_OP NULL
++#else
+ #define TARGET_ASM_UNALIGNED_DI_OP "\t.uaxword\t"
++#endif
+ 
+ /* The target hook has to handle DI-mode values.  */
+ #undef TARGET_ASM_INTEGER

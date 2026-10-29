@@ -1,0 +1,114 @@
+--- a/gcc/config/nextstep-c.cc
++++ b/gcc/config/nextstep-c.cc
+@@ -16,6 +16,8 @@
+ nextstep_register_cpp (void)
+ {
+   cpp_get_options (parse_in)->nextstep_include_concat = 1;
++  if (cpp_get_options (parse_in)->preprocessed)
++    return;
+   /* Match the original compiler's default SDK namespace in GNU modes.
+      Command-line -D/-U options are processed after target registration.  */
+   if (!flag_iso)
+--- a/gcc/config/nextstep.h
++++ b/gcc/config/nextstep.h
+@@ -137,3 +137,8 @@
+   nextstep_asm_output_dwarf_delta (FILE, SIZE, LABEL1, LABEL2, 0)
+ #define ASM_OUTPUT_DWARF_OFFSET(FILE, SIZE, LABEL, OFFSET, BASE) \
+   nextstep_asm_output_dwarf_offset (FILE, SIZE, LABEL, OFFSET, BASE)
++
++/* Native libsys predates C99; header compatibility aliases do not make
++   public C99 library entry points available to compiler-created calls. */
++#undef TARGET_LIBC_HAS_FUNCTION
++#define TARGET_LIBC_HAS_FUNCTION no_c99_libc_has_function
+--- a/gcc/builtins.cc
++++ b/gcc/builtins.cc
+@@ -2796,6 +2796,13 @@
+       narg = fold_build2_loc (loc, COMPLEX_EXPR, ctype,
+ 			  build_real (type, dconst0), arg);
+ 
++      /* This complex rvalue may be passed by reference (for example on
++         32-bit PA).  Give the argument addressable storage before expanding
++         the call, rather than taking the address of a COMPLEX_EXPR.  */
++      rtx argument = assign_temp (ctype, 1, 1);
++      store_expr (narg, argument, 0, false, false);
++      narg = make_tree (ctype, argument);
++
+       /* Make sure not to fold the cexp call again.  */
+       call = build1 (ADDR_EXPR, build_pointer_type (TREE_TYPE (fn)), fn);
+       return expand_expr (build_call_nary (ctype, call, 1, narg),
+--- a/gcc/config/pa/pa.cc
++++ b/gcc/config/pa/pa.cc
+@@ -10686,6 +10686,15 @@
+ static void
+ pa_asm_trampoline_template (FILE *f)
+ {
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  /* NeXT function pointers name code directly, not SOM plabels.  The
++     indirect-call pattern supplies the trampoline address in r22.  */
++  fputs ("\tldw 12(0,%r22),%r21\n"
++         "\tbe 0(4,%r21)\n"
++         "\tldw 16(0,%r22),%r29\n"
++         "\t.long 0\n\t.long 0\n", f);
++  return;
++#endif
+   if (!TARGET_64BIT)
+     {
+       if (TARGET_PA_20)
+@@ -10775,6 +10784,18 @@
+   rtx fnaddr = XEXP (DECL_RTL (fndecl), 0);
+   rtx start, end, r_tramp, tmp;
+ 
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  emit_block_move (m_tramp, assemble_trampoline_template (),
++                   GEN_INT (TRAMPOLINE_SIZE), BLOCK_OP_NORMAL);
++  r_tramp = force_reg (Pmode, XEXP (m_tramp, 0));
++  emit_move_insn (adjust_address (m_tramp, Pmode, 12), fnaddr);
++  emit_move_insn (adjust_address (m_tramp, Pmode, 16), chain_value);
++  /* Flush both instructions and patched data, including a crossed line. */
++  end = force_reg (Pmode, plus_constant (Pmode, r_tramp, TRAMPOLINE_SIZE));
++  emit_insn (gen_clear_cache (r_tramp, end));
++  return;
++#endif
++
+   emit_block_move (m_tramp, assemble_trampoline_template (),
+ 		   GEN_INT (TRAMPOLINE_SIZE), BLOCK_OP_NORMAL);
+   r_tramp = force_reg (Pmode, XEXP (m_tramp, 0));
+@@ -10830,6 +10851,9 @@
+ static rtx
+ pa_trampoline_adjust_address (rtx addr)
+ {
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  return addr;
++#endif
+   if (!TARGET_64BIT)
+     addr = memory_address (Pmode, plus_constant (Pmode, addr, 58));
+   return addr;
+--- a/gcc/config/pa/nextstep.h
++++ b/gcc/config/pa/nextstep.h
+@@ -74,3 +74,7 @@
+ #undef ASM_PREFERRED_EH_DATA_FORMAT
+ #define ASM_PREFERRED_EH_DATA_FORMAT(CODE, GLOBAL) DW_EH_PE_absptr
+ #undef ASM_MAYBE_OUTPUT_ENCODED_ADDR_RTX
++
++/* Three instructions followed by the code pointer and static chain. */
++#undef TRAMPOLINE_SIZE
++#define TRAMPOLINE_SIZE 20
+--- a/gcc/config/i386/nextstep.h
++++ b/gcc/config/i386/nextstep.h
+@@ -21,7 +21,7 @@
+ #undef DEFAULT_PCC_STRUCT_RETURN
+ #define DEFAULT_PCC_STRUCT_RETURN 0
+ #undef PREFERRED_STACK_BOUNDARY_DEFAULT
+-#define PREFERRED_STACK_BOUNDARY_DEFAULT 32
++#define PREFERRED_STACK_BOUNDARY_DEFAULT 128
+ 
+ #undef TARGET_OS_CPP_BUILTINS
+ #define TARGET_OS_CPP_BUILTINS()                         \
+@@ -50,6 +50,7 @@
+ 
+ #undef SUBTARGET_DRIVER_SELF_SPECS
+ #define SUBTARGET_DRIVER_SELF_SPECS \
++  "%{!mincoming-stack-boundary=*:-mincoming-stack-boundary=2}", \
+   "%{!fno-asynchronous-unwind-tables:-fno-asynchronous-unwind-tables}", \
+   "%{!fno-unwind-tables:-fno-unwind-tables}"
+ 

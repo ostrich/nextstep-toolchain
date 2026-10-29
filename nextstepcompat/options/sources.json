@@ -1,0 +1,13 @@
+{
+  "version": "1.2.6",
+  "url": "https://musl.libc.org/releases/musl-1.2.6.tar.gz",
+  "archive_sha256": "d585fd3b613c66151fc3249e8ed44f77020cb5e6c1e635a616d3f9f82460512a",
+  "files_sha256": {
+    "getopt.c": "6b027d4054958f58e8b626b28f84562c3616cc40eb196960c4d11f624cd4f2e2",
+    "getopt_long.c": "b72f7b3747ce7c902b8b86a955737afa0f8afa25ab0245a0323c68205da22212",
+    "getopt.h": "f1d0e215fba663710ca0108338fdafa334b7095e512d0b0f29f8110d78fbb4e4",
+    "COPYRIGHT": "b870108ec5e7790e9f9919064f1b9421d62d5f9b0e6c230c6adf7ea2da62e97b",
+    "round.c": "2349e599e99052603794087193725d28180b5d3466d43d6e6e1b254627bf37ae",
+    "floorf.c": "55a62f12a4bcd151ca3a82e9ec98b1744c15017f1b6cdea56b33220ffdb166f3"
+  }
+}

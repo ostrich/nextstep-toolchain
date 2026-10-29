@@ -1,0 +1,1967 @@
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -1908,6 +1908,7 @@
+ 	tm_file="elfos.h h8300/h8300.h gnu-user.h linux.h glibc-stdint.h h8300/linux.h"
+ 	;;
+ hppa-*-nextstep*)
++	default_use_cxa_atexit=yes
+ 	target_cpu_default="MASK_PA_11|MASK_GAS"
+ 	tm_file="${tm_file} pa/pa32-regs.h pa/nextstep.h"
+ 	tmake_file="${tmake_file} pa/t-pa"
+@@ -2019,6 +2020,7 @@
+ 	tm_file="${cpu_type}/darwin64-biarch.h ${tm_file} "
+ 	;;
+ i[34567]86-*-nextstep*)
++	default_use_cxa_atexit=yes
+ 	tm_file="${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/nextstep.h"
+ 	with_cpu=${with_cpu:-i386}
+ 	use_gcc_stdint=provide
+@@ -2482,6 +2484,7 @@
+ 	tm_file="elfos.h newlib-stdint.h m32r/little.h ${tm_file}"
+ 	;;
+ m68k-*-nextstep*)
++	default_use_cxa_atexit=yes
+ 	default_m68k_cpu=68020
+ 	default_cf_cpu=5206
+ 	tm_file="${tm_file} m68k/nextstep.h"
+@@ -3547,6 +3550,7 @@
+ 	tm_file="${tm_file} elfos.h sh/elf.h sh/embed-elf.h vx-common.h vxworks.h sh/vxworks.h"
+ 	;;
+ sparc-*-nextstep*)
++	default_use_cxa_atexit=yes
+ 	tm_file="${tm_file} sparc/nextstep.h"
+ 	tmake_file="${tmake_file} sparc/t-sparc"
+ 	with_cpu=${with_cpu:-v8}
+--- a/gcc/config/nextstep-protos.h
++++ b/gcc/config/nextstep-protos.h
+@@ -2,7 +2,10 @@
+ extern void nextstep_init_sections (void);
+ extern section *nextstep_select_section (tree, int, unsigned HOST_WIDE_INT);
+ extern void nextstep_register_cpp (void);
++extern section *nextstep_function_section (tree, enum node_frequency, bool, bool);
++extern void nextstep_asm_weaken_decl (FILE *, tree, const char *, const char *);
+ #ifdef RTX_CODE
+ extern void nextstep_asm_out_constructor (rtx, int);
+ extern void nextstep_asm_out_destructor (rtx, int);
+ #endif
++extern void nextstep_output_aligned_bss (FILE *, tree, const char *, unsigned HOST_WIDE_INT, unsigned HOST_WIDE_INT);
+--- a/gcc/config/nextstep.cc
++++ b/gcc/config/nextstep.cc
+@@ -7,6 +7,7 @@
+ #include "coretypes.h"
+ #include "backend.h"
+ #include "target.h"
++#include "targhooks.h"
+ #include "rtl.h"
+ #include "tree.h"
+ #include "stringpool.h"
+@@ -42,7 +43,7 @@
+   {"V1_METT", ".objc_meth_var_types", NULL},
+   {"V1_CLRF", ".objc_cls_refs", NULL}
+ };
+-static section *constructors, *destructors;
++static section *constructors, *destructors, *coalesced_text, *coalesced_data;
+ 
+ static void
+ nextstep_objc_section (const char *directive)
+@@ -66,6 +67,11 @@
+                                      ".constructor");
+   destructors = get_unnamed_section (SECTION_WRITE, output_section_asm_op,
+                                     ".destructor");
++  coalesced_text = get_unnamed_section (SECTION_CODE | SECTION_LINKONCE,
++    output_section_asm_op,
++    ".section __TEXT,__textcoal_nt,coalesced,pure_instructions");
++  coalesced_data = get_unnamed_section (SECTION_WRITE | SECTION_LINKONCE,
++    output_section_asm_op, ".section __DATA,__datacoal_nt,coalesced");
+   for (unsigned i = 0; i < ARRAY_SIZE (metadata); ++i)
+     metadata[i].sect = get_unnamed_section (SECTION_WRITE,
+                                           nextstep_objc_section,
+@@ -77,6 +83,8 @@
+ {
+   if (DECL_P (decl))
+     {
++      if (DECL_WEAK (decl) && TREE_PUBLIC (decl))
++        return coalesced_data;
+       tree attr = lookup_attribute ("OBJC1META", DECL_ATTRIBUTES (decl));
+       if (attr && TREE_VALUE (attr)
+           && TREE_CODE (TREE_VALUE (attr)) == IDENTIFIER_NODE)
+@@ -132,3 +140,57 @@
+   assemble_integer (symbol, POINTER_SIZE / BITS_PER_UNIT, POINTER_SIZE, 1);
+   fputs (".reference .destructors_used\n", asm_out_file);
+ }
++
++section *
++nextstep_function_section (tree decl, enum node_frequency freq,
++                           bool startup, bool exit)
++{
++  if (decl && DECL_WEAK (decl) && TREE_PUBLIC (decl))
++    return coalesced_text;
++  return default_function_section (decl, freq, startup, exit);
++}
++
++void
++nextstep_asm_weaken_decl (FILE *file, tree decl, const char *name,
++                          const char *alias)
++{
++  if (alias)
++    {
++      error ("weak aliases are not supported on classic NeXT");
++      return;
++    }
++  if (!DECL_EXTERNAL (decl) && TREE_PUBLIC (decl))
++    {
++      targetm.asm_out.globalize_label (file, name);
++      fputs ("\t.weak_definition ", file);
++    }
++  else if (DECL_EXTERNAL (decl))
++    fputs ("\t.weak_reference ", file);
++  else
++    return;
++  assemble_name (file, name);
++  fputc ('\n', file);
++}
++
++/* Mach-O common symbols cannot also be weak definitions. Keep weak zero
++   objects in coalesced data; strong BSS retains real definition semantics. */
++void
++nextstep_output_aligned_bss (FILE *file, tree decl, const char *name,
++                             unsigned HOST_WIDE_INT size,
++                             unsigned HOST_WIDE_INT align)
++{
++  if (DECL_WEAK (decl) && TREE_PUBLIC (decl))
++    {
++      switch_to_section (coalesced_data);
++      assemble_align (align);
++      ASM_OUTPUT_LABEL (file, name);
++      ASM_OUTPUT_SKIP (file, size);
++    }
++  else
++    {
++      fputs ("\t.zerofill __DATA,__bss,", file);
++      assemble_name (file, name);
++      fprintf (file, "," HOST_WIDE_INT_PRINT_UNSIGNED ",%u\n", size,
++               floor_log2 (align / BITS_PER_UNIT));
++    }
++}
+--- a/gcc/doc/tm.texi.in
++++ b/gcc/doc/tm.texi.in
+@@ -8120,6 +8120,8 @@
+ 
+ @hook TARGET_IFUNC_REF_LOCAL_OK
+ 
++@hook TARGET_ATOMIC_LIBCALL_LOCK_FREE
++
+ @hook TARGET_ATOMIC_ALIGN_FOR_MODE
+ 
+ @hook TARGET_ATOMIC_ASSIGN_EXPAND_FENV
+--- a/gcc/doc/tm.texi
++++ b/gcc/doc/tm.texi
+@@ -12866,6 +12866,13 @@
+ locally.  The default is to return false.
+ @end deftypefn
+ 
++@deftypefn {Target Hook} bool TARGET_ATOMIC_LIBCALL_LOCK_FREE (machine_mode @var{mode})
++Return true if legacy synchronization libcalls for @var{mode} provide
++lock-free progress.  This controls lock-free queries, not whether the calls
++can implement atomic operations.  The default preserves the assumption that
++these synchronization helpers are lock-free.
++@end deftypefn
++
+ @deftypefn {Target Hook} {unsigned int} TARGET_ATOMIC_ALIGN_FOR_MODE (machine_mode @var{mode})
+ If defined, this function returns an appropriate alignment in bits for an
+ atomic object of machine_mode @var{mode}.  If 0 is returned then the
+--- a/gcc/config/nextstep.h
++++ b/gcc/config/nextstep.h
+@@ -5,6 +5,36 @@
+ #define SIZE_TYPE "long unsigned int"
+ #undef PTRDIFF_TYPE
+ #define PTRDIFF_TYPE "long int"
++
++/* NEXTSTEP predates stdint.h.  All four supported ABIs are ILP32;
++   these definitions also supply GCC's generated freestanding stdint.h.  */
++#define SIG_ATOMIC_TYPE "int"
++#define INT8_TYPE "signed char"
++#define INT16_TYPE "short int"
++#define INT32_TYPE "int"
++#define INT64_TYPE "long long int"
++#define UINT8_TYPE "unsigned char"
++#define UINT16_TYPE "short unsigned int"
++#define UINT32_TYPE "unsigned int"
++#define UINT64_TYPE "long long unsigned int"
++#define INT_LEAST8_TYPE INT8_TYPE
++#define INT_LEAST16_TYPE INT16_TYPE
++#define INT_LEAST32_TYPE INT32_TYPE
++#define INT_LEAST64_TYPE INT64_TYPE
++#define UINT_LEAST8_TYPE UINT8_TYPE
++#define UINT_LEAST16_TYPE UINT16_TYPE
++#define UINT_LEAST32_TYPE UINT32_TYPE
++#define UINT_LEAST64_TYPE UINT64_TYPE
++#define INT_FAST8_TYPE "int"
++#define INT_FAST16_TYPE "int"
++#define INT_FAST32_TYPE "int"
++#define INT_FAST64_TYPE INT64_TYPE
++#define UINT_FAST8_TYPE "unsigned int"
++#define UINT_FAST16_TYPE "unsigned int"
++#define UINT_FAST32_TYPE "unsigned int"
++#define UINT_FAST64_TYPE UINT64_TYPE
++#define INTPTR_TYPE PTRDIFF_TYPE
++#define UINTPTR_TYPE SIZE_TYPE
+ #undef WCHAR_TYPE
+ #define WCHAR_TYPE "short unsigned int"
+ #undef WCHAR_TYPE_SIZE
+@@ -18,6 +48,9 @@
+ 
+ /* NeXT startup/loader owns initialization; there is no GNU __main entry.  */
+ #define HAS_INIT_SECTION 1
++/* The classic constructor lists have no priority field. */
++#undef SUPPORTS_INIT_PRIORITY
++#define SUPPORTS_INIT_PRIORITY 0
+ 
+ /* Debug format restoration is a separate porting stage.  */
+ #define PREFERRED_DEBUGGING_TYPE NO_DEBUG
+@@ -69,3 +102,10 @@
+ #ifndef NEXTSTEP_OBJC_METADATA_ALIGNMENT
+ #define NEXTSTEP_OBJC_METADATA_ALIGNMENT 32
+ #endif
++
++/* Static Mach-O coalescing gives C++ templates and inline variables a
++   single definition without requiring any support from the old loader. */
++#define MAKE_DECL_ONE_ONLY(DECL) (DECL_WEAK (DECL) = 1)
++#define ASM_WEAKEN_DECL(FILE, DECL, NAME, ALIAS) \
++  nextstep_asm_weaken_decl (FILE, DECL, NAME, ALIAS)
++#define TARGET_ASM_FUNCTION_SECTION nextstep_function_section
+--- a/gcc/config/m68k/m68k.cc
++++ b/gcc/config/m68k/m68k.cc
+@@ -2365,6 +2365,15 @@
+ bool
+ m68k_legitimate_constant_p (machine_mode mode, rtx x)
+ {
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  /* NeXT's assembler treats small integer immediates in FP instructions as
++     numeric values, not GNU as raw IEEE encodings.  Its decimal syntax has
++     no infinity or NaN spelling, so keep those values in the constant pool. */
++  if (CONST_DOUBLE_P (x) && SCALAR_FLOAT_MODE_P (GET_MODE (x))
++      && (real_isinf (CONST_DOUBLE_REAL_VALUE (x))
++          || real_isnan (CONST_DOUBLE_REAL_VALUE (x))))
++    return false;
++#endif
+   return mode != XFmode && !m68k_illegitimate_symbolic_constant_p (x);
+ }
+ 
+@@ -5057,6 +5066,18 @@
+ 	       && INTVAL (XEXP (op, 0)) >= -0x8000))
+ 	fprintf (file, MOTOROLA ? ".l" : ":l");
+     }
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  else if (letter == 'f' && CONST_DOUBLE_P (op)
++           && (GET_MODE (op) == SFmode || GET_MODE (op) == DFmode))
++    {
++      /* Match the original NeXT compiler's numeric floating-immediate
++         syntax.  #0x3f800000 would mean the integer 1065353216 to as. */
++      char decimal[128];
++      real_to_decimal (decimal, CONST_DOUBLE_REAL_VALUE (op),
++                       sizeof decimal, 0, 1);
++      asm_fprintf (file, "%I0r%s", decimal);
++    }
++#endif
+   else if (GET_CODE (op) == CONST_DOUBLE && GET_MODE (op) == SFmode)
+     {
+       long l;
+--- a/gcc/config/sparc/nextstep.h
++++ b/gcc/config/sparc/nextstep.h
+@@ -27,7 +27,7 @@
+   } while (0)
+ #undef ASM_OUTPUT_ALIGNED_BSS
+ #define ASM_OUTPUT_ALIGNED_BSS(FILE, DECL, NAME, SIZE, ALIGN) \
+-  ASM_OUTPUT_ALIGNED_COMMON (FILE, NAME, SIZE, ALIGN)
++  nextstep_output_aligned_bss (FILE, DECL, NAME, SIZE, ALIGN)
+ 
+ #define SPARC_LONG_DOUBLE_TYPE_SIZE 64
+ #define NEXTSTEP_OBJC_METHOD_STACK_OFFSET 0
+@@ -42,7 +42,11 @@
+ #undef SUBTARGET_OVERRIDE_OPTIONS
+ #define SUBTARGET_OVERRIDE_OPTIONS \
+   do { if (flag_pic) error ("NeXT position-independent code is not implemented yet"); \
+-    if (TARGET_ARCH64) error ("NEXTSTEP requires 32-bit SPARC code"); } while (0)
++    if (TARGET_ARCH64) error ("NEXTSTEP requires 32-bit SPARC code"); \
++    /* SPARC v8 has no CAS.  All scalar operations must share libatomic's \
++       locks; inline stores cannot interoperate with a locked CAS helper. \
++       Dedicated atomic_flag operations retain native ldstub expansion.  */ \
++    flag_inline_atomics = 0; } while (0)
+ #undef ASM_OUTPUT_ADDR_VEC_ELT
+ #define ASM_OUTPUT_ADDR_VEC_ELT(FILE, VALUE) \
+   fprintf (FILE, "\t.long L%d\n", (VALUE))
+--- a/gcc/config/pa/nextstep.h
++++ b/gcc/config/pa/nextstep.h
+@@ -29,7 +29,7 @@
+   } while (0)
+ #undef ASM_OUTPUT_ALIGNED_BSS
+ #define ASM_OUTPUT_ALIGNED_BSS(FILE, DECL, NAME, SIZE, ALIGN) \
+-  ASM_OUTPUT_ALIGNED_COMMON (FILE, NAME, SIZE, ALIGN)
++  nextstep_output_aligned_bss (FILE, DECL, NAME, SIZE, ALIGN)
+ 
+ #define NEXTSTEP_OBJC_METHOD_STACK_OFFSET 0
+ #define HP_FP_ARG_DESCRIPTOR_REVERSED 1
+@@ -67,3 +67,10 @@
+ 
+ #undef TARGET_NEXTSTEP
+ #define TARGET_NEXTSTEP 1
++
++/* NeXT Mach-O has absolute pointer relocations, not the HP-UX PIC base
++   expression used by the generic PA exception-table emitter.  SJLJ still
++   needs correctly relocated type-info pointers in its language tables. */
++#undef ASM_PREFERRED_EH_DATA_FORMAT
++#define ASM_PREFERRED_EH_DATA_FORMAT(CODE, GLOBAL) DW_EH_PE_absptr
++#undef ASM_MAYBE_OUTPUT_ENCODED_ADDR_RTX
+--- a/gcc/config/pa/pa.cc
++++ b/gcc/config/pa/pa.cc
+@@ -270,6 +270,16 @@
+ #undef TARGET_ASM_FUNCTION_EPILOGUE
+ #define TARGET_ASM_FUNCTION_EPILOGUE pa_output_function_epilogue
+ 
++/* NEXTSTEP's PA synchronization helpers serialize through a native lock.
++   Other PA systems retain their existing lock-free query behavior. */
++static bool
++pa_atomic_libcall_lock_free (machine_mode)
++{
++  return !TARGET_NEXTSTEP;
++}
++#undef TARGET_ATOMIC_LIBCALL_LOCK_FREE
++#define TARGET_ATOMIC_LIBCALL_LOCK_FREE pa_atomic_libcall_lock_free
++
+ #undef TARGET_FUNCTION_VALUE
+ #define TARGET_FUNCTION_VALUE pa_function_value
+ #undef TARGET_LIBCALL_VALUE
+@@ -4097,7 +4107,7 @@
+ pa_compute_frame_size (poly_int64 size, int *fregs_live)
+ {
+   int freg_saved = 0;
+-  int i, j;
++  int i;
+ 
+   /* The code in pa_expand_prologue and pa_expand_epilogue must
+      be consistent with the rounding and size calculation done here.
+@@ -4127,8 +4137,9 @@
+     }
+ 
+   /* Account for space used by the callee general register saves.  */
+-  for (i = 18, j = frame_pointer_needed ? 4 : 3; i >= j; i--)
+-    if (df_regs_ever_live_p (i))
++  for (i = 18; i >= 3; i--)
++    if ((!frame_pointer_needed || i != HARD_FRAME_POINTER_REGNUM)
++        && df_regs_ever_live_p (i))
+       size += UNITS_PER_WORD;
+ 
+   /* Account for space used by the callee floating point register saves.  */
+@@ -4387,14 +4398,15 @@
+ 	    }
+ 	}
+ 
+-      for (i = 18; i >= 4; i--)
+-	if (df_regs_ever_live_p (i) && !call_used_or_fixed_reg_p (i))
++      for (i = 18; i >= 3; i--)
++	if (i != HARD_FRAME_POINTER_REGNUM
++            && df_regs_ever_live_p (i) && !call_used_or_fixed_reg_p (i))
+ 	  {
+ 	    store_reg (i, offset, HARD_FRAME_POINTER_REGNUM);
+ 	    offset += UNITS_PER_WORD;
+ 	    gr_saved++;
+ 	  }
+-      /* Account for %r3 which is saved in a special place.  */
++      /* Account for the hard frame pointer, saved in a special place.  */
+       gr_saved++;
+     }
+   /* No frame pointer needed.  */
+@@ -4728,8 +4740,9 @@
+ 	    }
+ 	}
+ 
+-      for (i = 18; i >= 4; i--)
+-	if (df_regs_ever_live_p (i) && !call_used_or_fixed_reg_p (i))
++      for (i = 18; i >= 3; i--)
++	if (i != HARD_FRAME_POINTER_REGNUM
++            && df_regs_ever_live_p (i) && !call_used_or_fixed_reg_p (i))
+ 	  {
+ 	    load_reg (i, offset, HARD_FRAME_POINTER_REGNUM);
+ 	    offset += UNITS_PER_WORD;
+@@ -10928,6 +10941,12 @@
+ pa_function_section (tree decl, enum node_frequency freq,
+ 		     bool startup, bool exit)
+ {
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  /* Mach-O weak definitions must use a coalesced section even though this
++     target does not expose arbitrary named function sections. */
++  return nextstep_function_section (decl, freq, startup, exit);
++#endif
++
+   /* Put functions in text section if target doesn't have named sections.  */
+   if (!targetm_common.have_named_sections)
+     return text_section;
+--- a/gcc/config/pa/pa.md
++++ b/gcc/config/pa/pa.md
+@@ -10182,7 +10182,7 @@
+ 	      (clobber (reg:SI 31))])
+    (set (match_operand:SI 0 "register_operand" "")
+ 	(reg:SI 29))]
+-  "!TARGET_PORTABLE_RUNTIME && !TARGET_64BIT"
++  "!TARGET_NEXTSTEP && !TARGET_PORTABLE_RUNTIME && !TARGET_64BIT"
+   "
+ {
+   if (TARGET_ELF32)
+@@ -10882,7 +10882,11 @@
+         (unspec:BLK [(match_dup 0)] UNSPEC_MEMORY_BARRIER))
+     (clobber (match_operand 1 "pmode_register_operand" "=&r"))]
+   ""
+-  "ldo 15(%!),%1\n\t{dep|depw} %%r0,31,3,%1\n\t{ldcw|ldcw,co} 0(%1),%1"
++{
++  if (TARGET_NEXTSTEP)
++    return "ldo 15(%!),%1\n\tdep %%r0,31,3,%1\n\tldcws 0(%1),%1";
++  return "ldo 15(%!),%1\n\t{dep|depw} %%r0,31,3,%1\n\t{ldcw|ldcw,co} 0(%1),%1";
++}
+   [(set_attr "type" "binary")
+    (set_attr "length" "12")])
+ 
+--- a/gcc/target.def
++++ b/gcc/target.def
+@@ -3653,6 +3653,15 @@
+    least some operations are supported; need to check optabs or builtins
+    for further details.  */
+ DEFHOOK
++(atomic_libcall_lock_free,
++ "Return true if legacy synchronization libcalls for @var{mode} provide\n\
++lock-free progress.  This controls lock-free queries, not whether the calls\n\
++can implement atomic operations.  The default preserves the assumption that\n\
++these synchronization helpers are lock-free.",
++ bool, (machine_mode mode),
++ hook_bool_mode_true)
++
++DEFHOOK
+ (vector_mode_supported_p,
+  "Define this to return nonzero if the current target is prepared to handle\n\
+ insns involving vector mode @var{mode}.  At the very least, it\n\
+--- a/gcc/builtins.cc
++++ b/gcc/builtins.cc
+@@ -7315,7 +7315,8 @@
+      the required size.  The pattern is not allowed to fail, so the existence
+      of the pattern indicates support is present.  Also require that an
+      atomic load exists for the required size.  */
+-  if (can_compare_and_swap_p (mode, true) && can_atomic_load_p (mode))
++  if (can_compare_and_swap_p (mode, targetm.atomic_libcall_lock_free (mode))
++      && can_atomic_load_p (mode))
+     return boolean_true_node;
+   else
+     return boolean_false_node;
+--- a/libstdc++-v3/src/filesystem/ops.cc
++++ b/libstdc++-v3/src/filesystem/ops.cc
+@@ -660,7 +660,8 @@
+ {
+   path p;
+ #if _GLIBCXX_USE_GETCWD
+-#if defined __GLIBC__ || defined _GLIBCXX_FILESYSTEM_IS_WINDOWS
++#if defined __GLIBC__ || defined _GLIBCXX_FILESYSTEM_IS_WINDOWS \
++    || defined _GLIBCXX_NEXTSTEP_ALLOCATING_GETCWD
+   if (char_ptr cwd = char_ptr{posix::getcwd(nullptr, 0)})
+     {
+       p.assign(cwd.get());
+--- a/libstdc++-v3/src/c++17/fs_ops.cc
++++ b/libstdc++-v3/src/c++17/fs_ops.cc
+@@ -736,7 +736,8 @@
+ {
+   path p;
+ #if _GLIBCXX_USE_GETCWD
+-#if defined __GLIBC__ || defined _GLIBCXX_FILESYSTEM_IS_WINDOWS
++#if defined __GLIBC__ || defined _GLIBCXX_FILESYSTEM_IS_WINDOWS \
++    || defined _GLIBCXX_NEXTSTEP_ALLOCATING_GETCWD
+   if (char_ptr cwd = char_ptr{posix::getcwd(nullptr, 0)})
+     {
+       p.assign(cwd.get());
+--- a/libstdc++-v3/include/c_global/cstdio
++++ b/libstdc++-v3/include/c_global/cstdio
+@@ -191,6 +191,13 @@
+   using ::__gnu_cxx::vsscanf;
+ } // namespace std
+ 
++#elif defined(_GLIBCXX_NEXTSTEP_BOUNDED_STDIO)
++// Expose the implemented subset without claiming the C99 scanf family.
++namespace std
++{
++  using ::snprintf;
++  using ::vsnprintf;
++}
+ #endif // _GLIBCXX_USE_C99_STDIO
+ 
+ #endif
+--- a/libstdc++-v3/include/bits/basic_string.h
++++ b/libstdc++-v3/include/bits/basic_string.h
+@@ -4738,7 +4738,7 @@
+     } while (__str.empty());
+     return __str;
+   }
+-#elif _GLIBCXX_USE_C99_STDIO
++#elif _GLIBCXX_USE_C99_STDIO || defined(_GLIBCXX_NEXTSTEP_BOUNDED_STDIO)
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wsuggest-attribute=format"
+   // NB: (v)snprintf vs sprintf.
+--- a/libatomic/configure.tgt
++++ b/libatomic/configure.tgt
+@@ -152,6 +152,19 @@
+ tmake_file=
+ # Other system configury
+ case "${target}" in
++  *-next-nextstep*)
++	# Classic Mach-O has neither ELF IFUNC nor pthreads.  Do not inherit
++	# SPARC's default v9 bump: NEXTSTEP supports v8 hardware.
++	if test "${target_cpu}" = sparc; then
++	  XCFLAGS="${configure_tgt_pre_target_cpu_XCFLAGS} -fno-inline-atomics"
++	fi
++	if test "${target_cpu}" = hppa; then
++	  XCFLAGS="${XCFLAGS} -fsync-libcalls"
++	fi
++	try_ifunc=no
++	config_path="nextstep ${config_path} posix"
++	;;
++
+   aarch64*-*-linux*)
+ 	# OS support for atomic primitives.
+ 	config_path="${config_path} linux/aarch64 posix"
+--- /dev/null
++++ b/libatomic/config/nextstep/lock.c
+@@ -0,0 +1,20 @@
++/* Native NEXTSTEP locks for the upstream atomic fallback algorithms.
++   SPDX-License-Identifier: GPL-3.0-or-later WITH GCC-exception-3.1 */
++#include "libatomic_i.h"
++
++/* These original cthreads primitives need no cthread_init and cannot recurse
++   into libatomic.  In particular, do not use the modern gthread bridge here:
++   that bridge itself needs atomics to initialize its native thread state. */
++extern void spin_lock (int *);
++extern void spin_unlock (int *);
++static int fallback_lock;
++
++/* One lock provides a common order across both the sized and generic paths,
++   including ranges which overlap a lock granule or page boundary.  This
++   conservative fallback also avoids virtual-alias hashing assumptions. */
++void libat_lock_1 (void *ptr UNUSED) { spin_lock (&fallback_lock); }
++void libat_unlock_1 (void *ptr UNUSED) { spin_unlock (&fallback_lock); }
++void libat_lock_n (void *ptr UNUSED, size_t n UNUSED)
++{ spin_lock (&fallback_lock); }
++void libat_unlock_n (void *ptr UNUSED, size_t n UNUSED)
++{ spin_unlock (&fallback_lock); }
+--- /dev/null
++++ b/libatomic/config/nextstep/host-config.h
+@@ -0,0 +1,13 @@
++/* NEXTSTEP PA sync helpers use locks, rather than lock-free instructions.
++   SPDX-License-Identifier: GPL-3.0-or-later WITH GCC-exception-3.1 */
++#ifdef __hppa__
++#undef FAST_ATOMIC_LDST_1
++#undef FAST_ATOMIC_LDST_2
++#undef FAST_ATOMIC_LDST_4
++#undef FAST_ATOMIC_LDST_8
++#define FAST_ATOMIC_LDST_1 0
++#define FAST_ATOMIC_LDST_2 0
++#define FAST_ATOMIC_LDST_4 0
++#define FAST_ATOMIC_LDST_8 0
++#endif
++#include_next <host-config.h>
+--- a/libatomic/configure.ac
++++ b/libatomic/configure.ac
+@@ -234,6 +234,9 @@
+ # Check to see if -pthread or -lpthread is needed.  Prefer the former.
+ # In case the pthread.h system header is not found, this test will fail.
+ case " $config_path " in
++ *" nextstep "*)
++  CFLAGS="$__libatomic_save_CFLAGS__ $XCFLAGS"
++  ;;
+  *" posix "*)
+   XPCFLAGS=""
+   CFLAGS="$CFLAGS -pthread"
+--- a/libatomic/configure
++++ b/libatomic/configure
+@@ -15386,6 +15386,9 @@
+ # Check to see if -pthread or -lpthread is needed.  Prefer the former.
+ # In case the pthread.h system header is not found, this test will fail.
+ case " $config_path " in
++ *" nextstep "*)
++  CFLAGS="$__libatomic_save_CFLAGS__ $XCFLAGS"
++  ;;
+  *" posix "*)
+   XPCFLAGS=""
+   CFLAGS="$CFLAGS -pthread"
+--- a/libgcc/config/pa/sync-libfuncs.c
++++ b/libgcc/config/pa/sync-libfuncs.c
+@@ -38,12 +38,14 @@
+    Thus, we need to synchonize memory accesses.  For more info, see:
+    "Advanced Performance Features of the 64-bit PA-8000" by Doug Hunt.  */
+ 
++#if !defined(__NeXT__)
+ typedef volatile int __attribute__((aligned (16))) ldcw_t;
+ static ldcw_t __atomicity_lock = 1;
++#endif
+ 
+ /* We want default visibility for the sync routines.  */
+ #undef VISIBILITY
+-#if defined(__hpux__) && !defined(__LP64__)
++#if (defined(__hpux__) || defined(__NeXT__)) && !defined(__LP64__)
+ #define VISIBILITY
+ #else
+ #define VISIBILITY __attribute__ ((visibility ("default")))
+@@ -59,6 +61,24 @@
+ # endif
+ #endif
+ 
++#if defined(__NeXT__)
++/* Use the original Mach lock API, sharing one lock across this entire
++   helper family. No Linux kernel assist or HP-UX assembly syntax is used. */
++extern void spin_lock (int *);
++static int nextstep_atomicity_lock __attribute__((aligned(16)));
++static inline void
++__sync_spin_lock (void)
++{
++  spin_lock (&nextstep_atomicity_lock);
++}
++static inline void
++__sync_spin_unlock (void)
++{
++  __atomic_thread_fence (__ATOMIC_SEQ_CST);
++  __asm__ __volatile__ ("" : : : "memory");
++  *(volatile int *)&nextstep_atomicity_lock = 0;
++}
++#else
+ static inline void
+ __sync_spin_lock (void)
+ {
+@@ -87,6 +107,8 @@
+ 			: : "r" (lock), "r" (tmp) : "memory");
+ }
+ 
++#endif
++
+ /* Load value with an atomic processor load if possible.  */
+ #define ATOMIC_LOAD(TYPE, WIDTH)					\
+   static inline TYPE							\
+@@ -104,11 +126,16 @@
+   u64 result;
+   double tmp;
+ 
++#if defined(__NeXT__)
++  asm volatile ("fldds 0(%1),%0" : "=f" (tmp) : "r" (ptr) : "memory");
++  __builtin_memcpy (&result, &tmp, sizeof(result));
++#else
+   asm volatile ("{fldds|fldd} 0(%2),%1\n\t"
+ 		"{fstds|fstd} %1,-16(%%sp)\n\t"
+ 		"{ldws|ldw} -16(%%sp),%0\n\t"
+ 		"{ldws|ldw} -12(%%sp),%R0"
+ 		: "=r" (result), "=f" (tmp) : "r" (ptr): "memory");
++#endif
+   return result;
+ }
+ #endif
+@@ -133,11 +160,16 @@
+ {
+   double tmp;
+ 
++#if defined(__NeXT__)
++  __builtin_memcpy (&tmp, &value, sizeof(tmp));
++  asm volatile ("fstds %0,0(%1)" : : "f" (tmp), "r" (ptr) : "memory");
++#else
+   asm volatile ("{stws|stw} %1,-16(%%sp)\n\t"
+ 		"{stws|stw} %R1,-12(%%sp)\n\t"
+ 		"{fldds|fldd} -16(%%sp),%0\n\t"
+ 		: "=f" (tmp) : "r" (value): "memory");
+   *(volatile double *)ptr = tmp;
++#endif
+ }
+ #endif
+ 
+--- a/config/gthr.m4
++++ b/config/gthr.m4
+@@ -39,6 +39,7 @@
+     posix)	thread_header=gthr-posix.h ;;
+     rtems)	thread_header=config/gthr-rtems.h ;;
+     single)	thread_header=gthr-single.h ;;
++    nextstep)	thread_header=gthr-nextstep.h ;;
+     tpf)	thread_header=config/s390/gthr-tpf.h ;;
+     vxworks)	thread_header=config/gthr-vxworks.h ;;
+     win32)	thread_header=config/i386/gthr-win32.h ;;
+--- a/gcc/configure.ac
++++ b/gcc/configure.ac
+@@ -2110,7 +2110,7 @@
+     target_thread_file='single'
+     ;;
+   aix | dce | lynx | mipssde | posix | rtems | \
+-  single | tpf | vxworks | win32 | mcf)
++  single | nextstep | tpf | vxworks | win32 | mcf)
+     target_thread_file=${enable_threads}
+     ;;
+   *)
+--- a/gcc/configure
++++ b/gcc/configure
+@@ -13220,7 +13220,7 @@
+     target_thread_file='single'
+     ;;
+   aix | dce | lynx | mipssde | posix | rtems | \
+-  single | tpf | vxworks | win32 | mcf)
++  single | nextstep | tpf | vxworks | win32 | mcf)
+     target_thread_file=${enable_threads}
+     ;;
+   *)
+--- a/libgcc/configure
++++ b/libgcc/configure
+@@ -5823,6 +5823,7 @@
+     posix)	thread_header=gthr-posix.h ;;
+     rtems)	thread_header=config/gthr-rtems.h ;;
+     single)	thread_header=gthr-single.h ;;
++    nextstep)	thread_header=gthr-nextstep.h ;;
+     tpf)	thread_header=config/s390/gthr-tpf.h ;;
+     vxworks)	thread_header=config/gthr-vxworks.h ;;
+     win32)	thread_header=config/i386/gthr-win32.h ;;
+--- /dev/null
++++ b/libgcc/gthr-nextstep.h
+@@ -0,0 +1,126 @@
++/* Native NEXTSTEP cthreads backend.
++   SPDX-License-Identifier: GPL-3.0-or-later WITH GCC-exception-3.1 */
++#ifndef GCC_GTHR_NEXTSTEP_H
++#define GCC_GTHR_NEXTSTEP_H
++#define __GTHREADS 1
++#define __GTHREADS_CXX0X 1
++#define __GTHREAD_HAS_COND 1
++
++typedef void *__gthread_t;
++typedef unsigned long __gthread_key_t;
++typedef struct { int lock; char *name; } __gthread_mutex_t;
++typedef struct {
++  __gthread_mutex_t mutex;
++  void *owner;
++  unsigned depth;
++} __gthread_recursive_mutex_t;
++struct __nextstep_waiter;
++typedef struct {
++  __gthread_mutex_t mutex;
++  struct __nextstep_waiter *head, *tail;
++} __gthread_cond_t;
++typedef struct {
++  __gthread_mutex_t mutex;
++  __gthread_cond_t condition;
++  int state;
++} __gthread_once_t;
++typedef struct { long tv_sec, tv_nsec; } __gthread_time_t;
++#define __GTHREAD_MUTEX_INIT {0, 0}
++#define __GTHREAD_RECURSIVE_MUTEX_INIT {{0, 0}, 0, 0}
++#define __GTHREAD_COND_INIT {{0, 0}, 0, 0}
++#define __GTHREAD_ONCE_INIT {{0, 0}, {{0, 0}, 0, 0}, 0}
++#define __GTHREAD_TIME_INIT {0, 0}
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++int __nextstep_gthread_active_p(void);
++int __nextstep_gthread_create(__gthread_t *, void *(*)(void *), void *);
++int __nextstep_gthread_join(__gthread_t, void **);
++int __nextstep_gthread_detach(__gthread_t);
++int __nextstep_gthread_equal(__gthread_t, __gthread_t);
++__gthread_t __nextstep_gthread_self(void);
++int __nextstep_gthread_yield(void);
++int __nextstep_gthread_once(__gthread_once_t *, void (*)(void));
++int __nextstep_gthread_once_enter(__gthread_once_t *);
++void __nextstep_gthread_once_finish(__gthread_once_t *, int);
++int __nextstep_gthread_key_create(__gthread_key_t *, void (*)(void *));
++int __nextstep_gthread_key_delete(__gthread_key_t);
++void *__nextstep_gthread_getspecific(__gthread_key_t);
++int __nextstep_gthread_setspecific(__gthread_key_t, const void *);
++int __nextstep_gthread_mutex_init_function(__gthread_mutex_t *);
++int __nextstep_gthread_mutex_destroy(__gthread_mutex_t *);
++int __nextstep_gthread_mutex_lock(__gthread_mutex_t *);
++int __nextstep_gthread_mutex_trylock(__gthread_mutex_t *);
++int __nextstep_gthread_mutex_unlock(__gthread_mutex_t *);
++int __nextstep_gthread_mutex_timedlock(__gthread_mutex_t *, const __gthread_time_t *);
++int __nextstep_gthread_recursive_mutex_init_function(__gthread_recursive_mutex_t *);
++int __nextstep_gthread_recursive_mutex_destroy(__gthread_recursive_mutex_t *);
++int __nextstep_gthread_recursive_mutex_lock(__gthread_recursive_mutex_t *);
++int __nextstep_gthread_recursive_mutex_trylock(__gthread_recursive_mutex_t *);
++int __nextstep_gthread_recursive_mutex_unlock(__gthread_recursive_mutex_t *);
++int __nextstep_gthread_recursive_mutex_timedlock(__gthread_recursive_mutex_t *, const __gthread_time_t *);
++int __nextstep_gthread_cond_init_function(__gthread_cond_t *);
++int __nextstep_gthread_cond_destroy(__gthread_cond_t *);
++int __nextstep_gthread_cond_signal(__gthread_cond_t *);
++int __nextstep_gthread_cond_broadcast(__gthread_cond_t *);
++int __nextstep_gthread_cond_wait(__gthread_cond_t *, __gthread_mutex_t *);
++int __nextstep_gthread_cond_wait_recursive(__gthread_cond_t *, __gthread_recursive_mutex_t *);
++int __nextstep_gthread_cond_timedwait(__gthread_cond_t *, __gthread_mutex_t *, const __gthread_time_t *);
++/* Called by the native thread trampoline and the process-exit hook. */
++void __nextstep_gthread_cleanup(void);
++#ifdef __cplusplus
++}
++#endif
++
++#define __gthread_active_p __nextstep_gthread_active_p
++#define __gthread_create __nextstep_gthread_create
++#define __gthread_join __nextstep_gthread_join
++#define __gthread_detach __nextstep_gthread_detach
++#define __gthread_equal __nextstep_gthread_equal
++#define __gthread_self __nextstep_gthread_self
++#define __gthread_yield __nextstep_gthread_yield
++#ifdef __cplusplus
++/* Catch in a C++ frame. The C bootstrap path must not register an SJLJ
++   context before the unwinder's own per-thread key has been initialized. */
++static inline int __gthread_once(__gthread_once_t *once, void (*function)(void))
++{
++  int status = __nextstep_gthread_once_enter(once);
++  if (status != 1) return status < 0 ? -status : status;
++#if defined(__EXCEPTIONS)
++  try { function(); }
++  catch (...) { __nextstep_gthread_once_finish(once, 0); throw; }
++#else
++  function();
++#endif
++  __nextstep_gthread_once_finish(once, 1);
++  return 0;
++}
++#else
++#define __gthread_once __nextstep_gthread_once
++#endif
++#define __gthread_key_create __nextstep_gthread_key_create
++#define __gthread_key_delete __nextstep_gthread_key_delete
++#define __gthread_getspecific __nextstep_gthread_getspecific
++#define __gthread_setspecific __nextstep_gthread_setspecific
++#define __gthread_mutex_init_function __nextstep_gthread_mutex_init_function
++#define __gthread_mutex_destroy __nextstep_gthread_mutex_destroy
++#define __gthread_mutex_lock __nextstep_gthread_mutex_lock
++#define __gthread_mutex_trylock __nextstep_gthread_mutex_trylock
++#define __gthread_mutex_unlock __nextstep_gthread_mutex_unlock
++#define __gthread_mutex_timedlock __nextstep_gthread_mutex_timedlock
++#define __gthread_recursive_mutex_init_function __nextstep_gthread_recursive_mutex_init_function
++#define __gthread_recursive_mutex_destroy __nextstep_gthread_recursive_mutex_destroy
++#define __gthread_recursive_mutex_lock __nextstep_gthread_recursive_mutex_lock
++#define __gthread_recursive_mutex_trylock __nextstep_gthread_recursive_mutex_trylock
++#define __gthread_recursive_mutex_unlock __nextstep_gthread_recursive_mutex_unlock
++#define __gthread_recursive_mutex_timedlock __nextstep_gthread_recursive_mutex_timedlock
++#define __gthread_cond_init_function __nextstep_gthread_cond_init_function
++#define __gthread_cond_destroy __nextstep_gthread_cond_destroy
++#define __gthread_cond_signal __nextstep_gthread_cond_signal
++#define __gthread_cond_broadcast __nextstep_gthread_cond_broadcast
++#define __gthread_cond_wait __nextstep_gthread_cond_wait
++#define __gthread_cond_wait_recursive __nextstep_gthread_cond_wait_recursive
++#define __gthread_cond_timedwait __nextstep_gthread_cond_timedwait
++
++#endif
+--- a/libstdc++-v3/crossconfig.m4
++++ b/libstdc++-v3/crossconfig.m4
+@@ -67,7 +67,7 @@
+     AC_DEFINE(HAVE_USELOCALE)
+     ;;
+ 
+-  *-darwin*)
++  *-darwin* | *-nextstep*)
+     # Darwin versions vary, but the linker should work in a cross environment,
+     # so we just check for all the features here.
+     # Check for available headers.
+@@ -76,7 +76,7 @@
+     GLIBCXX_CHECK_MATH_SUPPORT
+     GLIBCXX_CHECK_STDLIB_SUPPORT
+ 
+-    AC_CHECK_FUNCS(uselocale)
++    AC_CHECK_FUNCS([uselocale vsnprintf])
+     ;;
+ 
+   *djgpp)
+--- a/libstdc++-v3/configure
++++ b/libstdc++-v3/configure
+@@ -16388,6 +16388,7 @@
+     posix)	thread_header=gthr-posix.h ;;
+     rtems)	thread_header=config/gthr-rtems.h ;;
+     single)	thread_header=gthr-single.h ;;
++    nextstep)	thread_header=gthr-nextstep.h ;;
+     tpf)	thread_header=config/s390/gthr-tpf.h ;;
+     vxworks)	thread_header=config/gthr-vxworks.h ;;
+     win32)	thread_header=config/i386/gthr-win32.h ;;
+@@ -35455,7 +35456,7 @@
+ 
+     ;;
+ 
+-  *-darwin*)
++  *-darwin* | *-nextstep*)
+     # Darwin versions vary, but the linker should work in a cross environment,
+     # so we just check for all the features here.
+     # Check for available headers.
+@@ -38477,6 +38478,17 @@
+ if test "x$ac_cv_func_uselocale" = xyes; then :
+   cat >>confdefs.h <<_ACEOF
+ #define HAVE_USELOCALE 1
++_ACEOF
++
++fi
++done
++
++    for ac_func in vsnprintf
++do :
++  ac_fn_c_check_func "$LINENO" "vsnprintf" "ac_cv_func_vsnprintf"
++if test "x$ac_cv_func_vsnprintf" = xyes; then :
++  cat >>confdefs.h <<_ACEOF
++#define HAVE_VSNPRINTF 1
+ _ACEOF
+ 
+ fi
+--- a/libstdc++-v3/libsupc++/tinfo.cc
++++ b/libstdc++-v3/libsupc++/tinfo.cc
+@@ -53,7 +53,12 @@
+ 
+ bool
+ std::type_info::__equal (const std::type_info& arg) const _GLIBCXX_NOEXCEPT
++#if defined(__NeXT__) && !defined(__APPLE__)
++// Classic Mach-O does not provide GCC symbol aliases.
++{ return *this == arg; }
++#else
+ __attribute__((alias("_ZNKSt9type_infoeqERKS_")));
++#endif
+ #endif
+ 
+ namespace std {
+--- a/libstdc++-v3/configure.host
++++ b/libstdc++-v3/configure.host
+@@ -296,6 +296,9 @@
+   netbsd*)
+     os_include_dir="os/bsd/netbsd"
+     ;;
++  nextstep*)
++    os_include_dir="os/nextstep"
++    ;;
+   openbsd*)
+     os_include_dir="os/bsd/openbsd"
+     ;;
+--- /dev/null
++++ b/libstdc++-v3/config/os/nextstep/os_defines.h
+@@ -0,0 +1,18 @@
++/* Classic NEXTSTEP OS configuration.
++   SPDX-License-Identifier: GPL-3.0-or-later WITH GCC-exception-3.1 */
++#ifndef _GLIBCXX_OS_DEFINES
++#define _GLIBCXX_OS_DEFINES 1
++/* Request the SDK's POSIX declarations before its guarded headers. */
++#ifndef _POSIX_SOURCE
++#define _POSIX_SOURCE 1
++#endif
++/* The static linker merges defined weak symbols, but does not resolve
++   optional undefined weak imports to NULL. */
++/* The compatibility runtime supplies bounded formatting, independently of
++   the unavailable C99 scanf family. */
++#define _GLIBCXX_NEXTSTEP_BOUNDED_STDIO 1
++/* The reentrant compatibility getcwd implements the allocating form. */
++#define _GLIBCXX_NEXTSTEP_ALLOCATING_GETCWD 1
++#define _GLIBCXX_USE_WEAK_REF 0
++#define _GLIBCXX_GTHREAD_USE_WEAK 0
++#endif
+--- /dev/null
++++ b/libstdc++-v3/config/os/nextstep/ctype_base.h
+@@ -0,0 +1,59 @@
++// Locale support -*- C++ -*-
++
++// Copyright (C) 1997-2026 Free Software Foundation, Inc.
++//
++// This file is part of the GNU ISO C++ Library.  This library is free
++// software; you can redistribute it and/or modify it under the
++// terms of the GNU General Public License as published by the
++// Free Software Foundation; either version 3, or (at your option)
++// any later version.
++
++// This library is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++
++// Under Section 7 of GPL version 3, you are granted additional
++// permissions described in the GCC Runtime Library Exception, version
++// 3.1, as published by the Free Software Foundation.
++
++// You should have received a copy of the GNU General Public License and
++// a copy of the GCC Runtime Library Exception along with this program;
++// see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
++// <http://www.gnu.org/licenses/>.
++
++//
++// ISO C++ 14882: 22.1  Locales
++//
++
++// Default information, may not be appropriate for specific host.
++
++namespace std _GLIBCXX_VISIBILITY(default)
++{
++_GLIBCXX_BEGIN_NAMESPACE_VERSION
++
++  /// @brief  Base class for ctype.
++  struct ctype_base
++  {
++    // Non-standard typedefs.
++    typedef const int* 		__to_type;
++
++    // NB: Offsets into ctype<char>::_M_table force a particular size
++    // on the mask type. Because of this, we don't use an enum.
++    typedef unsigned int 	mask;
++    static const mask upper    	= 1 << 0;
++    static const mask lower 	= 1 << 1;
++    static const mask alpha 	= 1 << 2;
++    static const mask digit 	= 1 << 3;
++    static const mask xdigit 	= 1 << 4;
++    static const mask space 	= 1 << 5;
++    static const mask print 	= 1 << 6;
++    static const mask graph 	= (1 << 2) | (1 << 3) | (1 << 9); // alnum|punct
++    static const mask cntrl 	= 1 << 8;
++    static const mask punct 	= 1 << 9;
++    static const mask alnum 	= (1 << 2) | (1 << 3);  // alpha|digit
++    static const mask blank	= 1 << 10;
++  };
++
++_GLIBCXX_END_NAMESPACE_VERSION
++} // namespace
+--- /dev/null
++++ b/libstdc++-v3/config/os/nextstep/ctype_inline.h
+@@ -0,0 +1,173 @@
++// Locale support -*- C++ -*-
++
++// Copyright (C) 2000-2026 Free Software Foundation, Inc.
++//
++// This file is part of the GNU ISO C++ Library.  This library is free
++// software; you can redistribute it and/or modify it under the
++// terms of the GNU General Public License as published by the
++// Free Software Foundation; either version 3, or (at your option)
++// any later version.
++
++// This library is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++
++// Under Section 7 of GPL version 3, you are granted additional
++// permissions described in the GCC Runtime Library Exception, version
++// 3.1, as published by the Free Software Foundation.
++
++// You should have received a copy of the GNU General Public License and
++// a copy of the GCC Runtime Library Exception along with this program;
++// see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
++// <http://www.gnu.org/licenses/>.
++
++/** @file bits/ctype_inline.h
++ *  This is an internal header file, included by other library headers.
++ *  Do not attempt to use it directly. @headername{locale}
++ */
++
++//
++// ISO C++ 14882: 22.1  Locales
++//
++
++// ctype bits to be inlined go here. Non-inlinable (ie virtual do_*)
++// functions go in ctype.cc
++
++// The following definitions are portable, but insanely slow. If one
++// cares at all about performance, then specialized ctype
++// functionality should be added for the native os in question: see
++// the config/os/bits/ctype_*.h files.
++
++// Constructing a synthetic "C" table should be seriously considered...
++
++namespace std _GLIBCXX_VISIBILITY(default)
++{
++_GLIBCXX_BEGIN_NAMESPACE_VERSION
++
++  bool
++  ctype<char>::
++  is(mask __m, char __c) const
++  {
++    if (_M_table)
++      return _M_table[static_cast<unsigned char>(__c)] & __m;
++    else
++      {
++	bool __ret = false;
++	const size_t __bitmasksize = 15;
++	size_t __bitcur = 0; // Lowest bitmask in ctype_base == 0
++	for (; __bitcur <= __bitmasksize; ++__bitcur)
++	  {
++	    const mask __bit = static_cast<mask>(1 << __bitcur);
++	    if (__m & __bit)
++	      {
++		bool __testis;
++		switch (__bit)
++		  {
++		  case space:
++		    __testis = isspace(__c);
++		    break;
++		  case print:
++		    __testis = isprint(__c);
++		    break;
++		  case cntrl:
++		    __testis = iscntrl(__c);
++		    break;
++		  case upper:
++		    __testis = isupper(__c);
++		    break;
++		  case lower:
++		    __testis = islower(__c);
++		    break;
++		  case alpha:
++		    __testis = isalpha(__c);
++		    break;
++		  case digit:
++		    __testis = isdigit(__c);
++		    break;
++		  case punct:
++		    __testis = ispunct(__c);
++		    break;
++		  case xdigit:
++		    __testis = isxdigit(__c);
++		    break;
++		  case alnum:
++		    __testis = isalnum(__c);
++		    break;
++		  case graph:
++		    __testis = isgraph(__c);
++		    break;
++#ifdef _GLIBCXX_USE_C99_CTYPE_TR1
++		  case blank:
++		    __testis = isblank(__c);
++		    break;
++#endif
++		  default:
++		    __testis = false;
++		    break;
++		  }
++		__ret |= __testis;
++	      }
++	  }
++	return __ret;
++      }
++  }
++
++  const char*
++  ctype<char>::
++  is(const char* __low, const char* __high, mask* __vec) const
++  {
++    if (_M_table)
++      while (__low < __high)
++	*__vec++ = _M_table[static_cast<unsigned char>(*__low++)];
++    else
++      {
++	// Highest bitmask in ctype_base == 11.
++	const size_t __bitmasksize = 15;
++	for (;__low < __high; ++__vec, ++__low)
++	  {
++	    mask __m = 0;
++	    // Lowest bitmask in ctype_base == 0
++	    size_t __i = 0;
++	    for (;__i <= __bitmasksize; ++__i)
++	      {
++		const mask __bit = static_cast<mask>(1 << __i);
++		if (this->is(__bit, *__low))
++		  __m |= __bit;
++	      }
++	    *__vec = __m;
++	  }
++      }
++    return __high;
++  }
++
++  const char*
++  ctype<char>::
++  scan_is(mask __m, const char* __low, const char* __high) const
++  {
++    if (_M_table)
++      while (__low < __high
++	     && !(_M_table[static_cast<unsigned char>(*__low)] & __m))
++	++__low;
++    else
++      while (__low < __high && !this->is(__m, *__low))
++	++__low;
++    return __low;
++  }
++
++  const char*
++  ctype<char>::
++  scan_not(mask __m, const char* __low, const char* __high) const
++  {
++    if (_M_table)
++      while (__low < __high
++	     && (_M_table[static_cast<unsigned char>(*__low)] & __m) != 0)
++	++__low;
++    else
++      while (__low < __high && this->is(__m, *__low) != 0)
++	++__low;
++    return __low;
++  }
++
++_GLIBCXX_END_NAMESPACE_VERSION
++} // namespace
+--- /dev/null
++++ b/libstdc++-v3/config/os/nextstep/ctype_configure_char.cc
+@@ -0,0 +1,99 @@
++// Locale support -*- C++ -*-
++
++// Copyright (C) 2011-2026 Free Software Foundation, Inc.
++//
++// This file is part of the GNU ISO C++ Library.  This library is free
++// software; you can redistribute it and/or modify it under the
++// terms of the GNU General Public License as published by the
++// Free Software Foundation; either version 3, or (at your option)
++// any later version.
++
++// This library is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++
++// Under Section 7 of GPL version 3, you are granted additional
++// permissions described in the GCC Runtime Library Exception, version
++// 3.1, as published by the Free Software Foundation.
++
++// You should have received a copy of the GNU General Public License and
++// a copy of the GCC Runtime Library Exception along with this program;
++// see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
++// <http://www.gnu.org/licenses/>.
++
++/** @file ctype_configure_char.cc */
++
++//
++// ISO C++ 14882: 22.1  Locales
++//
++
++#include <locale>
++#include <cstdlib>
++#include <cstring>
++
++namespace std _GLIBCXX_VISIBILITY(default)
++{
++_GLIBCXX_BEGIN_NAMESPACE_VERSION
++
++// Information as gleaned from /usr/include/ctype.h
++
++  const ctype_base::mask*
++  ctype<char>::classic_table() throw()
++  { return 0; }
++
++  ctype<char>::ctype(__c_locale, const mask* __table, bool __del,
++		     size_t __refs)
++  : facet(__refs), _M_del(__table != 0 && __del),
++  _M_toupper(NULL), _M_tolower(NULL),
++  _M_table(__table ? __table : classic_table())
++  {
++    memset(_M_widen, 0, sizeof(_M_widen));
++    _M_widen_ok = 0;
++    memset(_M_narrow, 0, sizeof(_M_narrow));
++    _M_narrow_ok = 0;
++  }
++
++  ctype<char>::ctype(const mask* __table, bool __del, size_t __refs)
++  : facet(__refs), _M_del(__table != 0 && __del),
++  _M_toupper(NULL), _M_tolower(NULL),
++  _M_table(__table ? __table : classic_table())
++  {
++    memset(_M_widen, 0, sizeof(_M_widen));
++    _M_widen_ok = 0;
++    memset(_M_narrow, 0, sizeof(_M_narrow));
++    _M_narrow_ok = 0;
++  }
++
++  char
++  ctype<char>::do_toupper(char __c) const
++  { return ::toupper((int) __c); }
++
++  const char*
++  ctype<char>::do_toupper(char* __low, const char* __high) const
++  {
++    while (__low < __high)
++      {
++	*__low = ::toupper((int) *__low);
++	++__low;
++      }
++    return __high;
++  }
++
++  char
++  ctype<char>::do_tolower(char __c) const
++  { return ::tolower((int) __c); }
++
++  const char*
++  ctype<char>::do_tolower(char* __low, const char* __high) const
++  {
++    while (__low < __high)
++      {
++	*__low = ::tolower((int) *__low);
++	++__low;
++      }
++    return __high;
++  }
++
++_GLIBCXX_END_NAMESPACE_VERSION
++} // namespace
+--- a/libstdc++-v3/src/c++23/std.cc.in
++++ b/libstdc++-v3/src/c++23/std.cc.in
+@@ -3191,10 +3191,17 @@
+   using std::stof;
+   using std::stoi;
+   using std::stol;
++#if (_GLIBCXX_HAVE_STRTOLD && !_GLIBCXX_HAVE_BROKEN_STRTOLD) \
++    || __DBL_MANT_DIG__ == __LDBL_MANT_DIG__
+   using std::stold;
++#endif
++#if _GLIBCXX_USE_C99_STDLIB || __LONG_WIDTH__ == __LONG_LONG_WIDTH__
+   using std::stoll;
++#endif
+   using std::stoul;
++#if _GLIBCXX_USE_C99_STDLIB || __LONG_WIDTH__ == __LONG_LONG_WIDTH__
+   using std::stoull;
++#endif
+   using std::string;
+   using std::to_string;
+ #ifdef _GLIBCXX_USE_WCHAR_T
+--- a/libstdc++-v3/src/c++23/std-clib.cc.in
++++ b/libstdc++-v3/src/c++23/std-clib.cc.in
+@@ -92,193 +92,519 @@
+ {
+   using std::abs;
+   using std::acos;
++#if defined(_GLIBCXX_HAVE_ACOSF)
+   using std::acosf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::acosh;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::acoshf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::acoshl;
++#endif
++#if defined(_GLIBCXX_HAVE_ACOSL)
+   using std::acosl;
++#endif
+   using std::asin;
++#if defined(_GLIBCXX_HAVE_ASINF)
+   using std::asinf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::asinh;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::asinhf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::asinhl;
++#endif
++#if defined(_GLIBCXX_HAVE_ASINL)
+   using std::asinl;
++#endif
+   using std::atan;
+   using std::atan2;
++#if defined(_GLIBCXX_HAVE_ATAN2F)
+   using std::atan2f;
++#endif
++#if defined(_GLIBCXX_HAVE_ATAN2L)
+   using std::atan2l;
++#endif
++#if defined(_GLIBCXX_HAVE_ATANF)
+   using std::atanf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::atanh;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::atanhf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::atanhl;
++#endif
++#if defined(_GLIBCXX_HAVE_ATANL)
+   using std::atanl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::cbrt;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::cbrtf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::cbrtl;
++#endif
+   using std::ceil;
++#if defined(_GLIBCXX_HAVE_CEILF)
+   using std::ceilf;
++#endif
++#if defined(_GLIBCXX_HAVE_CEILL)
+   using std::ceill;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::copysign;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::copysignf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::copysignl;
++#endif
+   using std::cos;
++#if defined(_GLIBCXX_HAVE_COSF)
+   using std::cosf;
++#endif
+   using std::cosh;
++#if defined(_GLIBCXX_HAVE_COSHF)
+   using std::coshf;
++#endif
++#if defined(_GLIBCXX_HAVE_COSHL)
+   using std::coshl;
++#endif
++#if defined(_GLIBCXX_HAVE_COSL)
+   using std::cosl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS) && defined(_GLIBCXX_HAVE_C99_FLT_EVAL_TYPES)
+   using std::double_t;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::erf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::erfc;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::erfcf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::erfcl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::erff;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::erfl;
++#endif
+   using std::exp;
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::exp2;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::exp2f;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::exp2l;
++#endif
++#if defined(_GLIBCXX_HAVE_EXPF)
+   using std::expf;
++#endif
++#if defined(_GLIBCXX_HAVE_EXPL)
+   using std::expl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::expm1;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::expm1f;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::expm1l;
++#endif
+   using std::fabs;
++#if defined(_GLIBCXX_HAVE_FABSF)
+   using std::fabsf;
++#endif
++#if defined(_GLIBCXX_HAVE_FABSL)
+   using std::fabsl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fdim;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fdimf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fdiml;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS) && defined(_GLIBCXX_HAVE_C99_FLT_EVAL_TYPES)
+   using std::float_t;
++#endif
+   using std::floor;
++#if defined(_GLIBCXX_HAVE_FLOORF)
+   using std::floorf;
++#endif
++#if defined(_GLIBCXX_HAVE_FLOORL)
+   using std::floorl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fma;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fmaf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fmal;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fmax;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fmaxf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fmaxl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fmin;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fminf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::fminl;
++#endif
+   using std::fmod;
++#if defined(_GLIBCXX_HAVE_FMODF)
+   using std::fmodf;
++#endif
++#if defined(_GLIBCXX_HAVE_FMODL)
+   using std::fmodl;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::fpclassify;
++#endif
+   using std::frexp;
++#if defined(_GLIBCXX_HAVE_FREXPF)
+   using std::frexpf;
++#endif
++#if defined(_GLIBCXX_HAVE_FREXPL)
+   using std::frexpl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::hypot;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::hypotf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::hypotl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::ilogb;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::ilogbf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::ilogbl;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isfinite;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isgreater;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isgreaterequal;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isinf;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isless;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::islessequal;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::islessgreater;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isnan;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isnormal;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::isunordered;
++#endif
+   using std::ldexp;
++#if defined(_GLIBCXX_HAVE_LDEXPF)
+   using std::ldexpf;
++#endif
++#if defined(_GLIBCXX_HAVE_LDEXPL)
+   using std::ldexpl;
++#endif
+ #ifndef STD_COMPAT
+   using std::lerp;
+ #endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lgamma;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lgammaf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lgammal;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::llrint;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::llrintf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::llrintl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::llround;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::llroundf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::llroundl;
++#endif
+   using std::log;
+   using std::log10;
++#if defined(_GLIBCXX_HAVE_LOG10F)
+   using std::log10f;
++#endif
++#if defined(_GLIBCXX_HAVE_LOG10L)
+   using std::log10l;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::log1p;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::log1pf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::log1pl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::log2;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::log2f;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::log2l;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::logb;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::logbf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::logbl;
++#endif
++#if defined(_GLIBCXX_HAVE_LOGF)
+   using std::logf;
++#endif
++#if defined(_GLIBCXX_HAVE_LOGL)
+   using std::logl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lrint;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lrintf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lrintl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lround;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lroundf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::lroundl;
++#endif
+   using std::modf;
++#if defined(_GLIBCXX_HAVE_MODFF)
+   using std::modff;
++#endif
++#if defined(_GLIBCXX_HAVE_MODFL)
+   using std::modfl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nan;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nanf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nanl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nearbyint;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nearbyintf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nearbyintl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nextafter;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nextafterf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nextafterl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nexttoward;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nexttowardf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::nexttowardl;
++#endif
+   using std::pow;
++#if defined(_GLIBCXX_HAVE_POWF)
+   using std::powf;
++#endif
++#if defined(_GLIBCXX_HAVE_POWL)
+   using std::powl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::remainder;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::remainderf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::remainderl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::remquo;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::remquof;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::remquol;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::rint;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::rintf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::rintl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::round;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::roundf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::roundl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::scalbln;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::scalblnf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::scalblnl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::scalbn;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::scalbnf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::scalbnl;
++#endif
++#if _GLIBCXX_USE_C99_MATH
+   using std::signbit;
++#endif
+   using std::sin;
++#if defined(_GLIBCXX_HAVE_SINF)
+   using std::sinf;
++#endif
+   using std::sinh;
++#if defined(_GLIBCXX_HAVE_SINHF)
+   using std::sinhf;
++#endif
++#if defined(_GLIBCXX_HAVE_SINHL)
+   using std::sinhl;
++#endif
++#if defined(_GLIBCXX_HAVE_SINL)
+   using std::sinl;
++#endif
+   using std::sqrt;
++#if defined(_GLIBCXX_HAVE_SQRTF)
+   using std::sqrtf;
++#endif
++#if defined(_GLIBCXX_HAVE_SQRTL)
+   using std::sqrtl;
++#endif
+   using std::tan;
++#if defined(_GLIBCXX_HAVE_TANF)
+   using std::tanf;
++#endif
+   using std::tanh;
++#if defined(_GLIBCXX_HAVE_TANHF)
+   using std::tanhf;
++#endif
++#if defined(_GLIBCXX_HAVE_TANHL)
+   using std::tanhl;
++#endif
++#if defined(_GLIBCXX_HAVE_TANL)
+   using std::tanl;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::tgamma;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::tgammaf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::tgammal;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::trunc;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::truncf;
++#endif
++#if defined(_GLIBCXX_USE_C99_MATH_FUNCS)
+   using std::truncl;
++#endif
+ 
+ #if __cpp_lib_math_special_functions && !defined(STD_COMPAT)
+   using std::assoc_laguerre;
+@@ -467,7 +793,9 @@
+   using std::setbuf;
+   using std::setvbuf;
+   using std::size_t;
++#if _GLIBCXX_USE_C99_STDIO || defined(_GLIBCXX_NEXTSTEP_BOUNDED_STDIO)
+   using std::snprintf;
++#endif
+   using std::sprintf;
+   using std::sscanf;
+   using std::tmpfile;
+@@ -476,18 +804,28 @@
+ #endif
+   using std::ungetc;
+   using std::vfprintf;
++#if _GLIBCXX_USE_C99_STDIO
+   using std::vfscanf;
++#endif
+   using std::vprintf;
++#if _GLIBCXX_USE_C99_STDIO
+   using std::vscanf;
++#endif
++#if _GLIBCXX_USE_C99_STDIO || defined(_GLIBCXX_NEXTSTEP_BOUNDED_STDIO)
+   using std::vsnprintf;
++#endif
+   using std::vsprintf;
++#if _GLIBCXX_USE_C99_STDIO
+   using std::vsscanf;
++#endif
+ }
+ 
+ // 17.2.2 <cstdlib> [cstdlib.syn]
+ export C_LIB_NAMESPACE
+ {
++#if _GLIBCXX_USE_C99_STDLIB
+   using std::_Exit;
++#endif
+   using std::abort;
+   using std::abs;
+ #ifdef _GLIBCXX_HAVE_ALIGNED_ALLOC
+@@ -500,7 +838,9 @@
+   using std::atof;
+   using std::atoi;
+   using std::atol;
++#if _GLIBCXX_USE_C99_STDLIB
+   using std::atoll;
++#endif
+   using std::bsearch;
+   using std::calloc;
+   using std::div;
+@@ -511,9 +851,15 @@
+   using std::labs;
+   using std::ldiv;
+   using std::ldiv_t;
++#if _GLIBCXX_USE_C99_STDLIB
+   using std::llabs;
++#endif
++#if _GLIBCXX_USE_C99_STDLIB
+   using std::lldiv;
++#endif
++#if _GLIBCXX_USE_C99_STDLIB
+   using std::lldiv_t;
++#endif
+   using std::malloc;
+ #ifdef _GLIBCXX_HAVE_MBSTATE_T
+   using std::mblen;
+@@ -529,12 +875,20 @@
+   using std::size_t;
+   using std::srand;
+   using std::strtod;
++#if _GLIBCXX_USE_C99_STDLIB || _GLIBCXX_HAVE_STRTOF
+   using std::strtof;
++#endif
+   using std::strtol;
++#if _GLIBCXX_USE_C99_STDLIB || _GLIBCXX_HAVE_STRTOLD
+   using std::strtold;
++#endif
++#if _GLIBCXX_USE_C99_STDLIB
+   using std::strtoll;
++#endif
+   using std::strtoul;
++#if _GLIBCXX_USE_C99_STDLIB
+   using std::strtoull;
++#endif
+   using std::system;
+ #ifdef _GLIBCXX_USE_WCHAR_T
+   using std::wcstombs;
+--- a/libstdc++-v3/config.h.in
++++ b/libstdc++-v3/config.h.in
+@@ -968,3 +968,6 @@
+ #if __cplusplus >= 201103L
+ #undef __CORRECT_ISO_CPP11_MATH_H_PROTO_INT
+ #endif
++
++/* Define to 1 if vsnprintf is available independently of other C99 stdio. */
++#undef HAVE_VSNPRINTF
+--- a/libstdc++-v3/config/locale/generic/c_locale.h
++++ b/libstdc++-v3/config/locale/generic/c_locale.h
+@@ -70,7 +70,8 @@
+     __builtin_va_list __args;
+     __builtin_va_start(__args, __fmt);
+ 
+-#if _GLIBCXX_USE_C99_STDIO && !_GLIBCXX_HAVE_BROKEN_VSNPRINTF
++#if (_GLIBCXX_USE_C99_STDIO || defined(_GLIBCXX_HAVE_VSNPRINTF)) \
++    && !_GLIBCXX_HAVE_BROKEN_VSNPRINTF
+     const int __ret = __builtin_vsnprintf(__out, __size, __fmt, __args);
+ #else
+     const int __ret = __builtin_vsprintf(__out, __fmt, __args);
+--- a/libstdc++-v3/src/c++17/floating_to_chars.cc
++++ b/libstdc++-v3/src/c++17/floating_to_chars.cc
+@@ -1083,7 +1083,12 @@
+     else
+ #endif
+ #endif
++#if defined(__NeXT__) && !defined(__APPLE__) && _GLIBCXX_HAVE_VSNPRINTF
++    // Original NeXT sprintf reads long double arguments as double.
++    len = snprintf(buffer, length, format_string, args..., value);
++#else
+     len = sprintf(buffer, format_string, args..., value);
++#endif
+ 
+ #if _GLIBCXX_USE_C99_FENV_TR1 && defined(FE_TONEAREST)
+     if (saved_rounding_mode != FE_TONEAREST)
+--- a/libstdc++-v3/include/bits/locale_facets.tcc
++++ b/libstdc++-v3/include/bits/locale_facets.tcc
+@@ -1017,7 +1017,8 @@
+ 	char __fbuf[16];
+ 	__num_base::_S_format_float(__io, __fbuf, __mod);
+ 
+-#if _GLIBCXX_USE_C99_STDIO && !_GLIBCXX_HAVE_BROKEN_VSNPRINTF
++#if (_GLIBCXX_USE_C99_STDIO || defined(_GLIBCXX_HAVE_VSNPRINTF)) \
++    && !_GLIBCXX_HAVE_BROKEN_VSNPRINTF
+ 	// Precision is always used except for hexfloat format.
+ 	const bool __use_prec =
+ 	  (__io.flags() & ios_base::floatfield) != ios_base::floatfield;

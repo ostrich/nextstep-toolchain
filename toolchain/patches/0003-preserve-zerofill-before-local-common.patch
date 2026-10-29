@@ -1,0 +1,19 @@
+--- a/as/read.c
++++ b/as/read.c
+@@ -2187,9 +2187,13 @@
+ 	if((symbolP->sy_type & N_TYPE) == N_UNDF && symbolP->sy_value == 0){
+ 	    if(bss == NULL){
+ 		bss = section_new(SEG_DATA, SECT_BSS, S_ZEROFILL, 0, 0);
+-		bss->frch_root = xmalloc(SIZEOF_STRUCT_FRAG);
+-		memset(bss->frch_root, '\0', SIZEOF_STRUCT_FRAG);
+-		bss->frch_last = bss->frch_root;
++		/* .zerofill may already have allocated this section.  Keep its
++		   fragment, symbols and accumulated size when .lcomm follows. */
++		if(bss->frch_root == NULL){
++		    bss->frch_root = xmalloc(SIZEOF_STRUCT_FRAG);
++		    memset(bss->frch_root, '\0', SIZEOF_STRUCT_FRAG);
++		    bss->frch_last = bss->frch_root;
++		}
+ 	    }
+ 	    bss->frch_root->fr_address = rnd(bss->frch_root->fr_address,
+ 					     1 << align);

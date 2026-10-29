@@ -1,0 +1,140 @@
+--- a/strftime.c
++++ b/strftime.c
+@@ -1,13 +1,11 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <langinfo.h>
+ #include <locale.h>
+ #include <ctype.h>
+ #include <time.h>
+ #include <limits.h>
+-#include "locale_impl.h"
+-#include "time_impl.h"
++#include "time-support.h"
+ 
+ static int is_leap(int y)
+ {
+@@ -43,7 +41,7 @@
+ 	return val;
+ }
+ 
+-const char *__strftime_fmt_1(char (*s)[100], size_t *l, int f, const struct tm *tm, locale_t loc, int pad)
++const char *ns33_strftime_piece(char (*s)[100], size_t *l, int f, const struct tm *tm, int loc, int pad)
+ {
+ 	nl_item item;
+ 	long long val;
+@@ -124,7 +122,7 @@
+ 		fmt = "%H:%M";
+ 		goto recu_strftime;
+ 	case 's':
+-		val = __tm_to_secs(tm) - tm->__tm_gmtoff;
++		val = ns33_tm_to_secs(tm) - tm->tm_gmtoff;
+ 		width = 1;
+ 		goto number;
+ 	case 'S':
+@@ -177,14 +175,14 @@
+ 			return "";
+ 		}
+ 		*l = snprintf(*s, sizeof *s, "%+.4ld",
+-			tm->__tm_gmtoff/3600*100 + tm->__tm_gmtoff%3600/60);
++			tm->tm_gmtoff/3600*100 + tm->tm_gmtoff%3600/60);
+ 		return *s;
+ 	case 'Z':
+ 		if (tm->tm_isdst < 0) {
+ 			*l = 0;
+ 			return "";
+ 		}
+-		fmt = __tm_to_tzname(tm);
++		fmt = (tm->tm_zone ? tm->tm_zone : "");
+ 		goto string;
+ 	case '%':
+ 		*l = 1;
+@@ -201,19 +199,19 @@
+ 	}
+ 	return *s;
+ nl_strcat:
+-	fmt = __nl_langinfo_l(item, loc);
++	fmt = ns33_time_info(item);
+ string:
+ 	*l = strlen(fmt);
+ 	return fmt;
+ nl_strftime:
+-	fmt = __nl_langinfo_l(item, loc);
++	fmt = ns33_time_info(item);
+ recu_strftime:
+-	*l = __strftime_l(*s, sizeof *s, fmt, tm, loc);
++	*l = ns33_strftime_core(*s, sizeof *s, fmt, tm, loc);
+ 	if (!*l) return 0;
+ 	return *s;
+ }
+ 
+-size_t __strftime_l(char *restrict s, size_t n, const char *restrict f, const struct tm *restrict tm, locale_t loc)
++size_t ns33_strftime_core(char *restrict s, size_t n, const char *restrict f, const struct tm *restrict tm, int loc)
+ {
+ 	size_t l, k;
+ 	char buf[100];
+@@ -247,7 +245,7 @@
+ 		}
+ 		f = p;
+ 		if (*f == 'E' || *f == 'O') f++;
+-		t = __strftime_fmt_1(&buf, &k, *f, tm, loc, pad);
++		t = ns33_strftime_piece(&buf, &k, *f, tm, loc, pad);
+ 		if (!t) break;
+ 		if (width) {
+ 			/* Trim off any sign and leading zeros, then
+@@ -281,7 +279,10 @@
+ 
+ size_t strftime(char *restrict s, size_t n, const char *restrict f, const struct tm *restrict tm)
+ {
+-	return __strftime_l(s, n, f, tm, CURRENT_LOCALE);
+-}
+-
+-weak_alias(__strftime_l, strftime_l);
++	const char *locale = setlocale(LC_TIME, 0);
++	if (locale && strcmp(locale, "C") && strcmp(locale, "POSIX"))
++		return ns33_native_strftime(s, n, f, tm);
++	return ns33_strftime_core(s, n, f, tm, 0);
++}
++
++
+--- a/__tm_to_secs.c
++++ b/__tm_to_secs.c
+@@ -1,6 +1,6 @@
+-#include "time_impl.h"
++#include "time-support.h"
+ 
+-long long __tm_to_secs(const struct tm *tm)
++long long ns33_tm_to_secs(const struct tm *tm)
+ {
+ 	int is_leap;
+ 	long long year = tm->tm_year;
+@@ -14,8 +14,8 @@
+ 		}
+ 		year += adj;
+ 	}
+-	long long t = __year_to_secs(year, &is_leap);
+-	t += __month_to_secs(month, is_leap);
++	long long t = ns33_year_to_secs(year, &is_leap);
++	t += ns33_month_to_secs(month, is_leap);
+ 	t += 86400LL * (tm->tm_mday-1);
+ 	t += 3600LL * tm->tm_hour;
+ 	t += 60LL * tm->tm_min;
+--- a/__year_to_secs.c
++++ b/__year_to_secs.c
+@@ -1,4 +1,5 @@
+-long long __year_to_secs(long long year, int *is_leap)
++#include "time-support.h"
++long long ns33_year_to_secs(long long year, int *is_leap)
+ {
+ 	if (year-2ULL <= 136) {
+ 		int y = year;
+--- a/__month_to_secs.c
++++ b/__month_to_secs.c
+@@ -1,4 +1,5 @@
+-int __month_to_secs(int month, int is_leap)
++#include "time-support.h"
++int ns33_month_to_secs(int month, int is_leap)
+ {
+ 	static const int secs_through_month[] = {
+ 		0, 31*86400, 59*86400, 90*86400,

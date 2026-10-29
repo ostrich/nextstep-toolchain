@@ -1,0 +1,12 @@
+--- a/floorf.c
++++ b/floorf.c
+@@ -1,6 +1,7 @@
+-#include "libm.h"
++#include <stdint.h>
++#define FORCE_EVAL(x) do { volatile float v = (x); (void)v; } while (0)
+ 
+-float floorf(float x)
++float ns33_floorf(float x)
+ {
+ 	union {float f; uint32_t i;} u = {x};
+ 	int e = (int)(u.i >> 23 & 0xff) - 0x7f;

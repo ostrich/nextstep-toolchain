@@ -1,0 +1,81 @@
+--- a/floatscan.c
++++ b/floatscan.c
+@@ -1,13 +1,13 @@
+ #include <stdint.h>
+-#include <stdio.h>
++#include <stdlib.h>
++
+ #include <math.h>
+ #include <float.h>
+ #include <limits.h>
+ #include <errno.h>
+ #include <ctype.h>
+ 
+-#include "shgetc.h"
+-#include "floatscan.h"
++#include "parse-support.h"
+ 
+ #if LDBL_MANT_DIG == 53 && LDBL_MAX_EXP == 1024
+ 
+@@ -33,7 +33,7 @@
+ 
+ #define MASK (KMAX-1)
+ 
+-static long long scanexp(FILE *f, int pok)
++static long long scanexp(struct parse_stream *f, int pok)
+ {
+ 	int c;
+ 	int x;
+@@ -60,7 +60,7 @@
+ }
+ 
+ 
+-static long double decfloat(FILE *f, int c, int bits, int emin, int sign, int pok)
++static long double decfloat(struct parse_stream *f, int c, int bits, int emin, int sign, int pok)
+ {
+ 	uint32_t x[KMAX];
+ 	static const uint32_t th[] = { LD_B1B_MAX };
+@@ -311,7 +311,7 @@
+ 	return scalbnl(y, e2);
+ }
+ 
+-static long double hexfloat(FILE *f, int bits, int emin, int sign, int pok)
++static long double hexfloat(struct parse_stream *f, int bits, int emin, int sign, int pok)
+ {
+ 	uint32_t x = 0;
+ 	long double y = 0;
+@@ -423,7 +423,7 @@
+ 	return scalbnl(y, e2);
+ }
+ 
+-long double __floatscan(FILE *f, int prec, int pok)
++static long double parse_float(struct parse_stream *f, int prec, int pok)
+ {
+ 	int sign = 1;
+ 	size_t i;
+@@ -505,3 +505,25 @@
+ 
+ 	return decfloat(f, c, bits, emin, sign, pok);
+ }
++
++static long double parse_string(const char *s, char **end, int precision)
++{
++  struct parse_stream stream = { (const unsigned char *)s, (const unsigned char *)s, 0 };
++  long double value = parse_float(&stream, precision, 1);
++  if (precision == 0) {
++    volatile float rounded = value;
++    if ((value != 0 && rounded == 0) ||
++        (__builtin_isfinite(value) && !__builtin_isfinite(rounded)) ||
++        (rounded != 0 && __builtin_fabsl(rounded) < FLT_MIN)) errno = ERANGE;
++  } else if (precision == 1) {
++    volatile double rounded = value;
++    if ((value != 0 && rounded == 0) ||
++        (__builtin_isfinite(value) && !__builtin_isfinite(rounded)) ||
++        (rounded != 0 && __builtin_fabsl(rounded) < DBL_MIN)) errno = ERANGE;
++  }
++  if (end) *end = (char *)(stream.failed ? (const unsigned char *)s : stream.cursor);
++  return value;
++}
++float strtof(const char *s, char **end) { return parse_string(s, end, 0); }
++double strtod(const char *s, char **end) { return parse_string(s, end, 1); }
++long double strtold(const char *s, char **end) { return parse_string(s, end, 2); }

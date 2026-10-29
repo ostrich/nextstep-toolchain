@@ -1,0 +1,17 @@
+{
+  "url": "https://github.com/linux-test-project/ltp",
+  "commit": "353ea87799a6ca67e1e8a2c2793f59f2bc181ee0",
+  "prefix": "testcases/open_posix_testsuite/",
+  "files_sha256": {
+    "include/posixtest.h": "3df57cef9cddb9242e9ccde823e9ee391f23814b5b6fc32c8cd713b75ba6de89",
+    "conformance/interfaces/pthread_cond_timedwait/1-1.c": "63465825a682d527fbb477106c93a271b8881b8378576105c0f2f29213a92b37",
+    "conformance/interfaces/pthread_mutex_trylock/1-1.c": "bb2e871df233f6b0d9d657ecdc092b31d9753f67efad187c6d66762e7bb0d955",
+    "conformance/interfaces/pthread_join/1-1.c": "d79924968335bdfdcbee30da3e64503781725ab426c6c5c2df178696655ff7ee",
+    "conformance/interfaces/pthread_mutex_lock/1-1.c": "b1a87c72135c6a7d0b871b85555a09f04bd8e4a873dee3b23516015b86613309",
+    "conformance/interfaces/pthread_once/1-1.c": "6f9c28176728a954524f909c12b500886e23e8d8d63c8c070025f1d1b87adca3",
+    "conformance/interfaces/pthread_setspecific/1-1.c": "3a888810765ac0510505f62f5186c54d1aae04dd5f2a8b06cba505b7f21eabe0",
+    "conformance/interfaces/pthread_rwlock_rdlock/1-1.c": "4b3b61a923362dbebe4689b4f81e3df0fb1e755a85f8db4f53de2533d0cef84f",
+    "conformance/interfaces/pthread_barrier_wait/1-1.c": "f61089fd1f8f101c6b595dbbaf2e40d85cc872e6cab12e2c3627ff32538eba63",
+    "COPYING": "7cef39d6b101447712cc848d3a1459b88e0b3b1a1d63ed8503f2852192030ff0"
+  }
+}

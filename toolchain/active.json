@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "manifest_sha256": "e5fdf57b4c7cc11b5cd21b4e412aaeb775ea402cd4173d8b5b8965de8b43f72e",
+  "gcc_version": "16.2.0",
+  "gcc_patches_sha256": {
+    "0001-i386-add-experimental-nextstep-c-target.patch": "5bd090a3285e3cc687335fbc1eca918a5958af604f416a6c8376d6546f2daedf",
+    "0002-nextstep-restore-header-and-language-support.patch": "e4bd2dd539813ff6182780835747fe2955184113f1180947a145a6affaf89853",
+    "0003-nextstep-add-other-architectures.patch": "862f05a3d9ca33ab3bc7fa98dd56f8558d5ff748374f9193ea4ff45efe0f485a",
+    "0004-nextstep-restore-sparc-and-hppa.patch": "de54aae77ba5051277cfd14add4267836134c45de4d97bec3e3f6b8a02fcfada",
+    "0005-nextstep-add-cxx-runtime-support.patch": "7b8c885ddb4668e12e898b62105d9a344526f941ff1ca7c9e75982337ccfa8ab",
+    "0006-hppa-preserve-exact-ldil-constants.patch": "8e841d2d90cb1338c4a9e3c25339956e34ee9c9abacf1bde3c46f79c0eb54e28",
+    "0007-m68k-align-nextstep-local-stack-frames.patch": "65db174831e62a16950e5f52267b1bff5ac6ab30d5d7c788c15d7b0bbd234c1c"
+  },
+  "cctools_sources": {
+    "apple_cctools": {
+      "url": "https://github.com/apple-oss-distributions/cctools.git",
+      "tag": "cctools-1010.6",
+      "revision": "7a5450708479bbff61527d5e0c32a3f7b7e4c1d0"
+    },
+    "foreign_headers": {
+      "url": "https://github.com/tpoechtrager/cctools-port.git",
+      "revision": "904de2a71d4da6a9b30d2efaf912a10ddc7d9ddb",
+      "subdirectory": "cctools/include/foreign"
+    }
+  },
+  "cctools_patches_sha256": {
+    "0001-linux-host-and-nextstep-formats.patch": "173e5bf468385fe8e25347caa29afad205ec3a5b77f13898f7c41e51ecf621f3",
+    "0002-linux-bsd-archive-tool.patch": "7789e379cd295a9a0926df2c0da2f224d5d0610ba8e1c99295190ba603cd7aad",
+    "0003-preserve-zerofill-before-local-common.patch": "b2c72bae3f424ac9892b4c22de9b45533c55638257fa6c8cdfe207cd96405ace"
+  },
+  "validation": {
+    "patch_replay": "7 patches replay exactly; 59 source files match",
+    "relocation": "all 3711 recorded files verified",
+    "four_target_link": "optimized C main linked as NIHS fat executable through install/current",
+    "shared_libraries": "NIHS and OPENSTEP Intel: shared loading, upstream bzip2 vectors, missing runtime and compatible replacement"
+  },
+  "sdk": {
+    "libsys_s_sha256": "bc27b5072a436aad6b3da866b8d1c731694f4d247f930fd83686d786f39fcfac"
+  },
+  "note": "Shared-library support staged and tested; GCC backends and existing runtime archives retained byte-for-byte.",
+  "fixed_vm_tools": {
+    "sources": {
+      "url": "https://github.com/apple-oss-distributions/cctools.git",
+      "tag": "cctools-622.9",
+      "revision": "a9fa9c5f51ffa39e012100fd38d18f3a9ee91e06"
+    },
+    "patches_sha256": {
+      "0001-linux-host-and-explicit-target-tools.patch": "437ae04596a85f0a921f49770dadf71ee2aa4679c3bd1a0a0122b071a21b84b5"
+    },
+    "build_record_sha256": "94038e53b5a49e8b45567c3aa83789426a9367c43bcfd242f7026c443c5fc707",
+    "wrappers_sha256": {
+      "nextstep-gcc": "4bc3f62db687d47febffea016258ee4ca493f748969193cb65fc59cd1b02cb7d",
+      "nextstep-shlib": "78bdb2f836ec0bd3f077e0c00121bb97105d15ee3c72df27d01addb699fa437a"
+    }
+  }
+}

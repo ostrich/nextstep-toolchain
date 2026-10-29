@@ -1,0 +1,23 @@
+{
+  "project": "libc-test",
+  "upstream": "git://nsz.repo.hu:49100/repo/libc-test",
+  "mirror": "git://repo.or.cz/libc-test.git",
+  "commit": "7b95dfa5f5d5ca4d949221e0228ccc290bacc14e",
+  "files": {
+    "COPYRIGHT": "41b8f2e2706012eb534f89e72ff547308cb81dcb9acf077c40a9058a7c06088d",
+    "AUTHORS": "2ef0cb2715caf396241a4ee9bb0f464424549166154e5fafc74a8d5c1bf75f02",
+    "README": "89cf6dcd128dab2af83f39651281aef136af2951230e276b3a72014e31b0adf5",
+    "src/common/test.h": "ed618763ddd503dc076f103c4d03c6f03229900f78b7282cf03feb104b58f85d",
+    "src/common/rand.c": "7c3ada9f1e3ab094d6bf71021c40f790f81b38f4e609bb69e69fcee1242142aa",
+    "src/functional/string.c": "c804cf25cb526bb457820471ce1df87c7971877529e0624785a7a45214df3b56",
+    "src/functional/string_strcspn.c": "e1ecb338a60c021c0f6da29c006b1ee1b70bba9cef2c72cc20e0c2e7717bdd6a",
+    "src/functional/string_strstr.c": "26bae147b913e78a531f1be98b60653f89aca3c2979209a79792691035769650",
+    "src/functional/strtol.c": "fdb61137c77a406cee78a0aaf383f5794d519e49a9b6c2bfba9a9452bdb9d1a8",
+    "src/functional/strtod_simple.c": "6082f3b00ebbc33767973121c43968802e4b67658ce903a3ec790e4e5f998581",
+    "src/functional/snprintf.c": "9c75c6961a1d154af62609a8a22ec98e2b8ab9b0146f8b2c61483cb4dd6a187d",
+    "src/functional/sscanf.c": "89135e466cc90e521fbe947fd9d08cb3cb9daf14b6304c87edab52ea4cae63d5",
+    "src/functional/ungetc.c": "dbc960a6930ed014e2cea97c212ad7f3b24a22ea5ebdfb277d568f303ecbf006",
+    "src/functional/strftime.c": "a43f6f34638dd40a25b37d721efc914bff4d22d5f8eae4f6f7245984b48cd693",
+    "src/functional/qsort.c": "f38f28778ec58be5beaa6755fdbb0c17e8151925ceec5ab83c0080975ae61e48"
+  }
+}

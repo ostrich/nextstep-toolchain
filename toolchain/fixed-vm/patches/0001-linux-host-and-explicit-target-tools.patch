@@ -1,0 +1,26 @@
+--- a/mkshlib/mkshlib.c
++++ b/mkshlib/mkshlib.c
+@@ -100,8 +100,10 @@
+ 	signal(SIGINT, cleanup);
+ 	host_byte_sex = get_host_byte_sex();
+ 
+-	asname = ASNAME;
+-	ldname = LDNAME;
++	asname = getenv("NEXTSTEP_AS");
++	if(asname == NULL) asname = ASNAME;
++	ldname = getenv("NEXTSTEP_LD");
++	if(ldname == NULL) ldname = LDNAME;
+ 
+ 	for(i = 1; i < argc; i++){
+ 	    if(argv[i][0] != '-'){
+--- a/mkshlib/errors.c
++++ b/mkshlib/errors.c
+@@ -35,7 +35,7 @@
+ #include "mkshlib.h"
+ 
+ __private_extern__
+-unsigned long errors = 0;	/* number of calls to error() */
++uint32_t errors = 0;	/* number of calls to error() */
+ 
+ /*
+  * Just print the message in the standard format without setting an error.

@@ -1,0 +1,173 @@
+{
+  "observations": [
+    {
+      "interfaces": [
+        "strcspn",
+        "qsort"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "working natively",
+      "evidence_tests": [
+        "string_strcspn",
+        "qsort"
+      ],
+      "note": "Selected upstream cases pass on every target; not exhaustive conformance."
+    },
+    {
+      "interfaces": [
+        "strstr"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "Empty needle returns NULL for both empty and nonempty haystacks; required result is the haystack pointer."
+    },
+    {
+      "interfaces": [
+        "strtol"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "The native-only reduced control fails valid prefix/range/end-pointer cases. The invalid-base host divergence remains a separate policy issue."
+    },
+    {
+      "interfaces": [
+        "sscanf"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "Valid percent-i integer conversions do not recognize octal/hexadecimal prefixes. Additional failures need individual reduction and standards review."
+    },
+    {
+      "interfaces": [
+        "fprintf",
+        "ungetc"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "fprintf returns zero for a successful 13-byte write. A single ungetc after an unsuccessful scanset conversion fails; reduce the stream-state case before designing a fix."
+    },
+    {
+      "interfaces": [
+        "strstr"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "string_strstr"
+      ],
+      "note": "Pinned musl search passes the upstream cases, including empty needles."
+    },
+    {
+      "interfaces": [
+        "strtol",
+        "strtoul"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "strtol"
+      ],
+      "note": "Checked adapters pass upstream and reduced prefix, sign, range and end-pointer cases."
+    },
+    {
+      "interfaces": [
+        "sscanf",
+        "vsscanf",
+        "fscanf",
+        "vfscanf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "sscanf",
+        "ungetc"
+      ],
+      "note": "Pinned musl scanner passes string and native-stream input cases; va_list implementations are exercised through the variadic entry points."
+    },
+    {
+      "interfaces": [
+        "printf",
+        "fprintf",
+        "vfprintf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "Stream formatting and character counts pass; output errors set the native error indicator. The shared va_list implementation is exercised."
+    },
+    {
+      "interfaces": [
+        "ungetc"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "regressions",
+        "ungetc"
+      ],
+      "note": "Pushback passes all 256 byte values after repeated EOF, beginning-of-buffer lookahead and caller-owned buffer boundaries."
+    },
+    {
+      "interfaces": [
+        "strtod",
+        "snprintf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "strtod_simple",
+        "snprintf"
+      ],
+      "note": "Selected upstream conversion and bounded-format tests pass."
+    }
+  ],
+  "reviewed_guest_logs_sha256": {
+    "i386": "42159b33a4e78dd4d80cb56628bd951a6c219cd6cefc13f1fcf9c48746f65354",
+    "m68k": "31642de04bd3cff98057d2059e34a34140752060816d7f932fea73fe5db55113",
+    "sparc": "b2cb3b39325792514fa624c39a7e56e20ff2e0951c6ce0862d05c66c250be357",
+    "hppa": "be9cf0ade4defc9fed3c65679fec6c3d179cbc0e2d652386b6bebd86ecf1b688"
+  },
+  "next_batches": [
+    "Separate the mixed BSD string tests from the C string test body.",
+    "Fill the remaining self-contained string and integer API gaps from reviewed implementations.",
+    "Investigate filesystem/time wrappers against real kernel capabilities.",
+    "Extend the inventory to omitted headers, math and locale interfaces."
+  ]
+}

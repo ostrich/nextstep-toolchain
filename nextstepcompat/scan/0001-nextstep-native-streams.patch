@@ -1,0 +1,175 @@
+--- a/vfscanf.c
++++ b/vfscanf.c
+@@ -7,10 +7,9 @@
+ #include <string.h>
+ #include <stdint.h>
+ 
+-#include "stdio_impl.h"
++#include "scan-support.h"
+ #include "shgetc.h"
+-#include "intscan.h"
+-#include "floatscan.h"
++#include "scan-support.h"
+ 
+ #define SIZE_hh -2
+ #define SIZE_h  -1
+@@ -53,7 +52,7 @@
+ 	return p;
+ }
+ 
+-int vfscanf(FILE *restrict f, const char *restrict fmt, va_list ap)
++int ns33_scan_core(struct ns33_scan_stream *restrict f, const char *restrict fmt, va_list ap)
+ {
+ 	int width;
+ 	int size;
+@@ -74,10 +73,6 @@
+ 	size_t i, k;
+ 	wchar_t wc;
+ 
+-	FLOCK(f);
+-
+-	if (!f->rpos) __toread(f);
+-	if (!f->rpos) goto input_fail;
+ 
+ 	for (p=(const unsigned char *)fmt; *p; p++) {
+ 
+@@ -293,7 +288,7 @@
+ 		case 'i':
+ 			base = 0;
+ 		int_common:
+-			x = __intscan(f, base, 0, ULLONG_MAX);
++			x = ns33_scan_integer(f, base, 0, ULLONG_MAX);
+ 			if (!shcnt(f)) goto match_fail;
+ 			if (t=='p' && dest) *(void **)dest = (void *)(uintptr_t)x;
+ 			else store_int(dest, size, x);
+@@ -302,7 +297,7 @@
+ 		case 'e': case 'E':
+ 		case 'f': case 'F':
+ 		case 'g': case 'G':
+-			y = __floatscan(f, size, 0);
++			y = ns33_scan_float(f, size, 0);
+ 			if (!shcnt(f)) goto match_fail;
+ 			if (dest) switch (size) {
+ 			case SIZE_def:
+@@ -332,8 +327,6 @@
+ 			free(wcs);
+ 		}
+ 	}
+-	FUNLOCK(f);
+ 	return matches;
+ }
+ 
+-weak_alias(vfscanf,__isoc99_vfscanf);
+--- a/intscan.c
++++ b/intscan.c
+@@ -23,7 +23,7 @@
+ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+ };
+ 
+-unsigned long long __intscan(FILE *f, unsigned base, int pok, unsigned long long lim)
++unsigned long long ns33_scan_integer(struct ns33_scan_stream *f, unsigned base, int pok, unsigned long long lim)
+ {
+ 	const unsigned char *val = table+1;
+ 	int c, neg=0;
+--- a/floatscan.c
++++ b/floatscan.c
+@@ -7,7 +7,7 @@
+ #include <ctype.h>
+ 
+ #include "shgetc.h"
+-#include "floatscan.h"
++#include "binary-scale.h"
+ 
+ #if LDBL_MANT_DIG == 53 && LDBL_MAX_EXP == 1024
+ 
+@@ -33,7 +33,7 @@
+ 
+ #define MASK (KMAX-1)
+ 
+-static long long scanexp(FILE *f, int pok)
++static long long scanexp(struct ns33_scan_stream *f, int pok)
+ {
+ 	int c;
+ 	int x;
+@@ -60,7 +60,7 @@
+ }
+ 
+ 
+-static long double decfloat(FILE *f, int c, int bits, int emin, int sign, int pok)
++static long double decfloat(struct ns33_scan_stream *f, int c, int bits, int emin, int sign, int pok)
+ {
+ 	uint32_t x[KMAX];
+ 	static const uint32_t th[] = { LD_B1B_MAX };
+@@ -311,7 +311,7 @@
+ 	return scalbnl(y, e2);
+ }
+ 
+-static long double hexfloat(FILE *f, int bits, int emin, int sign, int pok)
++static long double hexfloat(struct ns33_scan_stream *f, int bits, int emin, int sign, int pok)
+ {
+ 	uint32_t x = 0;
+ 	long double y = 0;
+@@ -423,7 +423,7 @@
+ 	return scalbnl(y, e2);
+ }
+ 
+-long double __floatscan(FILE *f, int prec, int pok)
++long double ns33_scan_float(struct ns33_scan_stream *f, int prec, int pok)
+ {
+ 	int sign = 1;
+ 	size_t i;
+--- a/shgetc.c
++++ b/shgetc.c
+@@ -1,11 +1,11 @@
+ #include "shgetc.h"
+ 
+ /* The shcnt field stores the number of bytes read so far, offset by
+- * the value of buf-rpos at the last function call (__shlim or __shgetc),
++ * the value of buf-rpos at the last function call (ns33_scan_limit or ns33_scan_get),
+  * so that between calls the inline shcnt macro can add rpos-buf to get
+  * the actual count. */
+ 
+-void __shlim(FILE *f, off_t lim)
++void ns33_scan_limit(struct ns33_scan_stream *f, off_t lim)
+ {
+ 	f->shlim = lim;
+ 	f->shcnt = f->buf - f->rpos;
+@@ -16,11 +16,11 @@
+ 		f->shend = f->rend;
+ }
+ 
+-int __shgetc(FILE *f)
++int ns33_scan_get(struct ns33_scan_stream *f)
+ {
+ 	int c;
+ 	off_t cnt = shcnt(f);
+-	if (f->shlim && cnt >= f->shlim || (c=__uflow(f)) < 0) {
++	if (f->shlim && cnt >= f->shlim || (c=ns33_scan_read(f)) < 0) {
+ 		f->shcnt = f->buf - f->rpos + cnt;
+ 		f->shend = f->rpos;
+ 		f->shlim = -1;
+--- a/shgetc.h
++++ b/shgetc.h
+@@ -1,4 +1,4 @@
+-#include "stdio_impl.h"
++#include "scan-support.h"
+ 
+ /* Scan helper "stdio" functions for use by scanf-family and strto*-family
+  * functions. These accept either a valid stdio FILE, or a minimal pseudo
+@@ -20,12 +20,12 @@
+  * with string pseudo-FILEs, shunget has unlimited pushback, back to the
+  * beginning of the string. */
+ 
+-hidden void __shlim(FILE *, off_t);
+-hidden int __shgetc(FILE *);
++void ns33_scan_limit(struct ns33_scan_stream *, off_t);
++int ns33_scan_get(struct ns33_scan_stream *);
+ 
+ #define shcnt(f) ((f)->shcnt + ((f)->rpos - (f)->buf))
+-#define shlim(f, lim) __shlim((f), (lim))
+-#define shgetc(f) (((f)->rpos != (f)->shend) ? *(f)->rpos++ : __shgetc(f))
++#define shlim(f, lim) ns33_scan_limit((f), (lim))
++#define shgetc(f) (((f)->rpos != (f)->shend) ? *(f)->rpos++ : ns33_scan_get(f))
+ #define shunget(f) ((f)->shlim>=0 ? (void)(f)->rpos-- : (void)0)
+ 
+ #define sh_fromstring(f, s) \

@@ -1,0 +1,441 @@
+#!/usr/bin/env python3
+"""Linux-hosted NeXT C-family compiler driver with SDK and fat output support."""
+import hashlib
+import json
+import os
+import re
+import shutil
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+from collections import Counter
+
+ROOT = Path(__file__).resolve().parents[1]
+ARCHES = ('i386', 'm68k', 'sparc', 'hppa')
+INSTALLED = (ROOT / 'toolchain.json').is_file()
+BODY_PREFIX = '_ns33_shlib_body'
+
+def isolate_function_definitions(path, exports):
+    """Keep references public while giving explicitly exported bodies names."""
+    text = path.read_text()
+    definitions = Counter(re.findall(r'(?m)^(_[A-Za-z0-9_$]+):', text))
+    # Large libraries export thousands of APIs, while each source usually
+    # defines only a handful. Scan labels once rather than scanning the whole
+    # assembly once per entry in the ABI specification.
+    for name in sorted(definitions.keys() & set(exports)):
+        declaration = r'(?m)^(\s*\.globl[ \t]+)' + re.escape(name) + r'[ \t]*$'
+        if not re.search(declaration, text):
+            # A translation unit may have a private static function with the
+            # same spelling as another unit's public API. Keep its local
+            # definition and references intact. Other visibility spellings
+            # remain unsupported rather than silently changing linkage.
+            if re.search(r'(?m)^\s*\.(?:globl|global|private_extern)\b[^\n]*\b' +
+                         re.escape(name) + r'\b', text):
+                fail('unsupported shared function declaration: ' + name)
+            continue
+        pattern = r'(?m)^' + re.escape(name) + r':'
+        body = BODY_PREFIX + name
+        if body in definitions:
+            fail('shared function body name collision: ' + body)
+        text, count = re.subn(pattern, body + ':', text)
+        if count != 1:
+            fail('multiple shared function definitions: ' + name)
+        text, count = re.subn(r'(?m)^(\s*\.globl[ \t]+)' + re.escape(name) + r'[ \t]*$',
+                             r'\g<1>' + body, text)
+        if count != 1:
+            fail('unsupported shared function declaration: ' + name)
+    path.write_text(text)
+
+def auxiliary_output_options(options, source, output, mode, arch, fat):
+    """Keep GCC side outputs outside the private assembly workspace."""
+    def value(name):
+        result = None
+        for i, item in enumerate(options):
+            if item == name and i + 1 < len(options): result = options[i + 1]
+            elif item.startswith(name + '='): result = item[len(name) + 1:]
+        return result
+    dest = Path(output) if output else (Path(source.stem + '.o') if mode == '-c' else Path('a.out'))
+    directory = value('-dumpdir')
+    if directory is None:
+        directory = str(dest.parent) + '/' if str(dest.parent) != '.' else './'
+    if value('-dumpdir') is None and '-save-temps=cwd' in options: directory = './'
+    basename = value('-dumpbase')
+    supplied_base = basename is not None
+    if basename is None:
+        if mode == '-c': basename = dest.stem + source.suffix
+        elif output: basename = dest.name + '-' + source.name
+        else: basename = source.name
+    if fat:
+        suffix = value('-dumpbase-ext') if supplied_base else source.suffix
+        if suffix and basename.endswith(suffix):
+            basename = basename[:-len(suffix)] + '-' + arch + suffix
+        else:
+            basename = basename + '-' + arch
+    extra = []
+    if value('-dumpdir') is None: extra += ['-dumpdir', directory]
+    # Explicit bases may also need architecture disambiguation.
+    if not supplied_base or fat: extra += ['-dumpbase', basename]
+    extension = value('-dumpbase-ext')
+    if extension is None and not supplied_base:
+        extension = source.suffix
+        extra += ['-dumpbase-ext', extension]
+    saved = Path(basename) if Path(basename).is_absolute() or '/' in basename else Path(directory + basename)
+    if extension and str(saved).endswith(extension): saved = Path(str(saved)[:-len(extension)])
+    return extra, saved.with_name(saved.name + '.s')
+
+def fail(message):
+    raise SystemExit('nextstep-gcc: ' + message)
+
+def main(argv):
+    if '--help' in argv:
+        print('Usage: nextstep-gcc --sdk SDK [-arch ARCH ...] [GCC options] inputs [-o output]\n'
+              'Targets: i386 m68k sparc hppa. Default: i386. Supports -E, -S, -c and classic NeXT links.\n'
+              'SDK may also be set using NEXTSTEP_SDK. --build-record FILE records commands and hashes.\n'
+              'Use nextstep-g++ or --cxx to link C++ objects with the standard library.\n'
+              'Shared dependencies use import archives with -L/-l; create them using nextstep-shlib.\n'
+              'Use --shared-exports ABI.json when compiling canonical-entry shared libraries.\n'
+              'Development: --compiler-build DIR, --cxx-runtime DIR and --atomic-build DIR select builds.')
+        return
+    sdk = os.environ.get('NEXTSTEP_SDK') or (str(ROOT / 'sdk/nextstep3.3') if INSTALLED and (ROOT / 'sdk/nextstep3.3').is_dir() else None)
+    arches, inputs, options = [], [], []
+    link_order = []
+    output = None
+    mode = 'link'
+    record_path = None
+    no_stdlib = False
+    relocatable = False
+    language = None
+    compiler_build = None
+    host_tools = None
+    cxx_runtime = None
+    atomic_build = None
+    compatibility_headers = None
+    shared_spec = None
+    cxx_driver = Path(sys.argv[0]).name.endswith('g++')
+    no_default_libs = False
+    no_startfiles = False
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg in ('--sdk', '-isysroot', '-arch', '-o', '--build-record', '-x', '--compiler-build', '--host-tools', '--cxx-runtime', '--atomic-build', '--compat-headers', '--shared-exports'):
+            i += 1
+            if i == len(argv): fail('missing value after ' + arg)
+            value = argv[i]
+            if arg in ('--sdk', '-isysroot'): sdk = value
+            elif arg == '-arch':
+                if value not in ARCHES: fail('unsupported architecture ' + value)
+                if value not in arches: arches.append(value)
+            elif arg == '-o': output = value
+            elif arg == '-x': language = value
+            elif arg == '--compiler-build': compiler_build = Path(value).resolve()
+            elif arg == '--host-tools': host_tools = Path(value).resolve()
+            elif arg == '--cxx-runtime': cxx_runtime = Path(value).resolve()
+            elif arg == '--atomic-build': atomic_build = Path(value).resolve()
+            elif arg == '--compat-headers': compatibility_headers = Path(value).resolve()
+            elif arg == '--shared-exports': shared_spec = Path(value).resolve()
+            else: record_path = Path(value)
+        elif arg in ('-E', '-S', '-c'): mode = arg
+        elif arg == '-nostdlib': no_stdlib = True
+        elif arg == '-nodefaultlibs': no_default_libs = True
+        elif arg == '-nostartfiles': no_startfiles = True
+        elif arg == '--cxx': cxx_driver = True
+        elif arg == '-r': relocatable = True
+        elif arg == '-static': pass
+        elif arg in ('-shared', '-dynamiclib', '-pthread', '-pie', '-flto') or arg.startswith('-flto='):
+            fail(arg + ' requires nextstep-shlib for fixed-address shared libraries' if arg in ('-shared', '-dynamiclib') else arg + ' is not supported by the classic NeXT runtime')
+        elif arg.startswith('-Wl,'):
+            values = arg[4:].split(',')
+            link_order.append(('flags', values))
+        elif arg in ('-L', '-l', '-Xlinker'):
+            i += 1
+            if i == len(argv): fail('missing value after ' + arg)
+            values = [argv[i]] if arg == '-Xlinker' else [arg + argv[i]]
+            link_order.append(('flags', values))
+        elif arg.startswith(('-L', '-l')):
+            link_order.append(('flags', [arg]))
+        elif arg in ('-I', '-isystem', '-idirafter', '-iquote', '-include', '-imacros', '-D', '-U', '-MF', '-MT', '-MQ', '--param', '-param', '-dumpdir', '-dumpbase', '-dumpbase-ext', '-aux-info', '-auxbase', '-auxbase-strip', '-Xpreprocessor', '-Xassembler', '-Xclang'):
+            i += 1
+            if i == len(argv): fail('missing value after ' + arg)
+            options.extend([arg, argv[i]])
+        elif arg == '-':
+            link_order.append(('input', len(inputs)))
+            inputs.append(None)
+        elif arg.startswith('-'): options.append(arg)
+        # Preserve a symlink's extension: GCC uses it to select the language.
+        else:
+            link_order.append(('input', len(inputs)))
+            inputs.append(Path(arg).absolute())
+        i += 1
+    arches = arches or ['i386']
+    shared_exports = []
+    if shared_spec:
+        try:
+            specification = json.loads(shared_spec.read_text())
+        except (OSError, ValueError) as error:
+            fail('cannot read shared ABI specification: ' + str(error))
+        if not isinstance(specification, dict) or not isinstance(specification.get('exports'), list):
+            fail('shared ABI specification requires an exports list')
+        if specification.get('canonical_entries') is not True:
+            fail('--shared-exports requires canonical_entries in the ABI specification')
+        shared_exports = [name for name in specification['exports'] if name is not None]
+        if (not shared_exports or any(not isinstance(name,str) or
+                not re.fullmatch(r'_[A-Za-z0-9_$]+',name) or name.startswith(BODY_PREFIX)
+                for name in shared_exports) or len(set(shared_exports)) != len(shared_exports)):
+            fail('invalid shared export names')
+    if compiler_build and (INSTALLED or len(arches) != 1):
+        fail('--compiler-build requires one architecture in the development tree')
+    if (cxx_runtime or atomic_build) and (INSTALLED or len(arches) != 1):
+        fail('runtime build overrides require one architecture in the development tree')
+    if atomic_build and not cxx_runtime:
+        fail('--atomic-build requires --cxx-runtime')
+    # GCC dependency-only modes imply preprocessing even without explicit -E.
+    # Do not feed a makefile dependency list to the target assembler.
+    if any(flag in options for flag in ('-M', '-MM')):
+        mode = '-E'
+    queries = [x for x in options if x in ('--version', '-dumpversion', '-dumpfullversion', '-dumpmachine', '-print-libgcc-file-name', '-dumpspecs')]
+    if queries and not inputs:
+        if len(arches) != 1: fail('query requires one architecture')
+        if len(queries) != 1 and set(queries) != {'-dumpversion', '-dumpfullversion'}:
+            fail('incompatible compiler queries')
+        version_file = ROOT / ('toolchain.json' if INSTALLED else 'sources.lock.json')
+        information = json.loads(version_file.read_text())
+        version = information['gcc_version'] if INSTALLED else information['gcc']['version']
+        query = '-dumpfullversion' if '-dumpfullversion' in queries else queries[0]
+        if query == '-dumpspecs':
+            build = compiler_build / 'gcc' if compiler_build else (ROOT / 'libexec/gcc' / arches[0] if INSTALLED else ROOT / 'work' / ('build-' + arches[0]) / 'gcc')
+            subprocess.run([str(build / 'xgcc'), '-B' + str(build) + '/', '-dumpspecs'], check=True)
+        elif query == '--version': print('NeXT GCC ' + version + ' (Linux cross compiler)')
+        elif query in ('-dumpversion', '-dumpfullversion'): print(version)
+        elif query == '-dumpmachine': print(arches[0] + '-next-nextstep3.3')
+        else:
+            print(ROOT / 'lib' / arches[0] / 'libgcc.a' if INSTALLED else ROOT / 'work' / ('runtime-host-' + arches[0]) / 'libgcc.a')
+        return
+    if not inputs and options == ['-v']:
+        build = compiler_build / 'gcc' if compiler_build else (ROOT / 'libexec/gcc' / arches[0] if INSTALLED else ROOT / 'work' / ('build-' + arches[0]) / 'gcc')
+        subprocess.run([str(build / 'xgcc'), '-B' + str(build) + '/', '-v'], check=True)
+        return
+    if not inputs: fail('no input files')
+    if not sdk: fail('no SDK found; run bin/setup-sdk developer.iso, or provide --sdk / NEXTSTEP_SDK')
+    sdk = Path(sdk).resolve()
+    if not (sdk / 'usr/include').is_dir(): fail('SDK has no usr/include directory')
+    if mode in ('-E', '-S') and (len(arches) != 1 or len(inputs) != 1):
+        fail('-E and -S require one architecture and one input')
+    if mode == '-c' and len(inputs) > 1 and output: fail('-o with -c requires one input')
+    for path in inputs:
+        if path is not None and not path.is_file(): fail('input not found: ' + str(path))
+    if host_tools and INSTALLED: fail('--host-tools is for development builds')
+    tools = host_tools or ROOT / ('libexec/cctools' if INSTALLED else 'work/host-tools/bin')
+    commands = []
+    artifacts = []
+    debug_records = {}
+    debug_enabled = False
+    for option in options:
+        if re.fullmatch(r'-g(?:gdb|dwarf(?:-[2-5])?)?[0-3]?', option):
+            debug_enabled = option not in ('-g0', '-ggdb0')
+    runtime_inputs = {}
+    stdin_data = sys.stdin.buffer.read() if None in inputs else None
+    input_records = [({'path': '<stdin>', 'sha256': hashlib.sha256(stdin_data).hexdigest()} if path is None
+                      else {'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
+                     for path in inputs] if record_path else []
+    def run(cmd, quiet=False):
+        commands.append([str(x) for x in cmd])
+        subprocess.run(commands[-1], check=True, stdout=subprocess.DEVNULL if quiet else None)
+    def identify(path):
+        return {'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
+    def merge(slices, dest):
+        dest = Path(dest).resolve()
+        # Stage beside the destination, so replacing it is atomic even when
+        # the compiler's temporary directory is on another filesystem.
+        with tempfile.TemporaryDirectory(prefix='.nextstep-output-', dir=dest.parent) as staging:
+            temporary = Path(staging) / 'output'
+            if len(slices) == 1:
+                shutil.copy2(slices[0], temporary)
+            else:
+                run([tools / 'lipo', '-create', *slices, '-output', temporary])
+            os.replace(temporary, dest)
+        artifacts.append(identify(dest))
+    try:
+        with tempfile.TemporaryDirectory(prefix='nextstep-build-') as temp:
+            temp = Path(temp)
+            # Derived SDK headers are private inputs, never compiler bundle files.
+            overlay = temp / 'sdk-compat'
+            preparer = ROOT / ('libexec/nextstep/prepare-sdk.py' if INSTALLED else 'tools/prepare-sdk.py')
+            run([sys.executable, preparer, '--sdk', sdk, '--output', overlay], quiet=True)
+            if stdin_data is not None:
+                source = temp / 'stdin.c'
+                source.write_bytes(stdin_data)
+                inputs = [source if path is None else path for path in inputs]
+            slice_outputs = {str(path): [] for path in inputs}
+            executables = []
+            for arch in arches:
+                build = compiler_build / 'gcc' if compiler_build else (ROOT / 'libexec/gcc' / arch if INSTALLED else ROOT / 'work' / ('build-' + arch) / 'gcc')
+                runtime_config = None
+                if INSTALLED:
+                    runtime_config = json.loads((ROOT / 'toolchain.json').read_text()).get('cxx_runtime', {}).get(arch)
+                if runtime_config:
+                    cxx_headers = [ROOT / name for name in runtime_config['headers']]
+                    compat_headers = ROOT / runtime_config['compat_headers']
+                    libdir = ROOT / runtime_config['libraries']
+                    stdcxx = libdir / 'libstdc++.a'
+                    startup = libdir / 'crt-nextstep.o'
+                    cxx_support = [libdir / name for name in ['libgcc_eh.a', 'libnextstep-cxx-compat.a', 'libatomic.a', 'libnextstep-cxx-compat.a', 'libnextstepcompat.a']]
+                elif cxx_runtime:
+                    cxx_headers = [cxx_runtime / 'include', cxx_runtime / ('include/' + arch + '-next-nextstep3.3'),
+                                   ROOT / 'work/gcc-16.2.0/libstdc++-v3/libsupc++']
+                    compat_headers = ROOT / 'nextstepcompat/include'
+                    stdcxx = cxx_runtime / 'src/.libs/libstdc++.a'
+                    startup = cxx_runtime / 'crt-nextstep.o'
+                    cxx_support = [cxx_runtime / 'libgcc_eh.a', cxx_runtime / 'libnextstep-cxx-compat.a']
+                    if atomic_build:
+                        cxx_support += [atomic_build / '.libs/libatomic.a', cxx_runtime / 'libnextstep-cxx-compat.a']
+                    cxx_support += [cxx_runtime / 'nextstepcompat' / arch / 'libnextstepcompat.a']
+                else:
+                    cxx_headers, cxx_support, startup, stdcxx = [], [], None, None
+                    compat_headers = None
+                if compatibility_headers:
+                    if not compatibility_headers.is_dir():
+                        fail('compatibility header directory not found: ' + str(compatibility_headers))
+                    compat_headers = compatibility_headers
+                def cxx_input(path):
+                    if language is not None:
+                        return language in ('c++', 'objective-c++', 'c++-cpp-output', 'objective-c++-cpp-output')
+                    return path.suffix in ('.cc', '.cp', '.cxx', '.cpp', '.CPP', '.C', '.mm', '.M', '.ii') or (
+                        cxx_driver and path.suffix in ('.c', '.i', '.m'))
+                cxx_link = cxx_driver or any(cxx_input(path) for path in inputs if path.suffix not in ('.a', '.o'))
+                if cxx_driver and not cxx_headers:
+                    fail('the selected toolchain has no integrated C++ runtime')
+                includes = [ '-D_NEXT_SOURCE', '-nostdinc', '-isystem', str(overlay),
+                            '-isystem', str(build / 'include'), '-idirafter', str(sdk / 'usr/include'),
+                            '-idirafter', str(sdk / 'usr/include/ansi'), '-idirafter', str(sdk / 'usr/include/bsd')]
+                objects = []
+                for index, path in enumerate(inputs):
+                    stem = temp / (arch + '-' + str(index))
+                    if path.suffix in ('.o', '.a') and language is None:
+                        if mode != 'link': fail('object/archive input requires linking')
+                        objects.append(path)
+                        continue
+                    if path.suffix in ('.s', '.S') and mode not in ('-E', '-S'):
+                        assembly = path
+                        if path.suffix == '.S':
+                            assembly = stem.with_suffix('.s')
+                            run([build / 'xgcc', '-B' + str(build) + '/', *includes, *options,
+                                 '-E', '-x', 'assembler-with-cpp', path, '-o', assembly])
+                    else:
+                        assembly = stem.with_suffix('.s')
+                        runtime_includes = []
+                        if cxx_input(path) and '-nostdinc++' not in options:
+                            # This target gives ordinary system directories
+                            # implicit C linkage for the original SDK. C++
+                            # headers must not enter through that directory kind.
+                            runtime_includes += [item for directory in cxx_headers for item in ['-I', str(directory)]]
+                        compatibility_includes = []
+                        if compat_headers:
+                            # -B injects GCC's own include directory ahead of
+                            # explicit -isystem paths. The compatibility layer
+                            # must wrap those headers (notably limits.h).
+                            compatibility_includes = ['-I', str(compat_headers)]
+                        # Application -I wrappers still precede our layer.
+                        cmd = [build / 'xgcc', '-B' + str(build) + '/', *runtime_includes,
+                               *includes, *options, *compatibility_includes]
+                        if language: cmd += ['-x', language]
+                        elif cxx_driver and path.suffix in ('.c', '.i', '.m'):
+                            cmd += ['-x', 'objective-c++' if path.suffix == '.m' else 'c++']
+                        if mode in ('-E', '-S'):
+                            cmd += [mode, path]
+                            if output: cmd += ['-o', output]
+                            elif mode == '-S': cmd += ['-o', path.stem + '.s']
+                            run(cmd)
+                            if mode == '-S' and shared_exports:
+                                isolate_function_definitions(Path(output or path.stem + '.s'), shared_exports)
+                            return
+                        aux_options, saved_assembly = auxiliary_output_options(options, path, output, mode, arch, len(arches) > 1)
+                        run(cmd + aux_options + ['-S', path, '-o', assembly])
+                        if any(flag == '-save-temps' or flag.startswith('-save-temps=') for flag in options):
+                            shutil.copy2(assembly, saved_assembly)
+                    if shared_exports:
+                        if assembly == path:
+                            copied = stem.with_suffix('.s')
+                            shutil.copy2(assembly, copied)
+                            assembly = copied
+                        isolate_function_definitions(assembly, shared_exports)
+                    obj = stem.with_suffix('.o')
+                    run([tools / ('as-' + arch), '-o', obj, assembly])
+                    objects.append(obj)
+                    slice_outputs[str(path)].append(obj)
+                if mode == 'link':
+                    dest = temp / ('linked-' + arch)
+                    # LC_UUID is unknown to the original NEXTSTEP loader.
+                    cmd = [tools / 'ld', '-arch', arch, '-no_uuid']
+                    if relocatable: cmd += ['-r']
+                    else: cmd += ['-static']
+                    if not no_stdlib and not no_startfiles and not relocatable:
+                        cmd += [sdk / 'lib/crt0.o']
+                        if startup: cmd += [startup]
+                    # Archives are searched at their command-line position. Moving -l
+                    # after explicit archives can leave transitive symbols unresolved.
+                    for kind, value in link_order:
+                        cmd += [objects[value]] if kind == 'input' else value
+                    # User library paths take precedence over the private SDK.
+                    cmd += ['-L' + str(sdk / 'usr/lib'), '-L' + str(sdk / 'lib')]
+                    # Coherent fixed-VM requirements must be established before
+                    # archive extraction can select an older dependency view.
+                    import runpy
+                    # Execute the recorded source directly: no stale bytecode
+                    # and no cache writes inside immutable installed bundles.
+                    shared = runpy.run_path(str(Path(__file__).with_name('nextstep-shlib')),
+                                            run_name='nextstep_link_imports')
+                    try:
+                        cmd = shared['normalize_link_imports'](cmd, arch, tools, temp, run)
+                    except (ValueError, KeyError, TypeError, OSError) as error:
+                        fail('shared imports: ' + str(error))
+                    if not no_stdlib and not no_default_libs and not relocatable:
+                        if cxx_link and stdcxx: cmd += [stdcxx]
+                        cmd += cxx_support
+                        runtime = ROOT / 'lib' / arch / 'libgcc.a' if INSTALLED else ROOT / 'work' / ('runtime-host-' + arch) / 'libgcc.a'
+                        if not runtime.is_file(): fail('build the ' + arch + ' runtime first')
+                        cmd += [runtime, sdk / 'lib/libsys_s.a']
+                    if record_path:
+                        runtime_inputs[arch] = [identify(Path(x)) for x in cmd
+                            if isinstance(x, Path) and x.is_file() and x not in objects]
+                    run(cmd + ['-o', dest])
+                    if debug_enabled and not relocatable:
+                        debug_helper = ROOT / ('libexec/nextstep/nextstep-debug.py'
+                                               if INSTALLED else 'tools/nextstep-debug.py')
+                        debug_module = runpy.run_path(str(debug_helper),
+                                                     run_name='nextstep_debug_bundle')
+                        final_output = Path(output or 'a.out').absolute()
+                        debug_root = final_output.with_name(final_output.name + '.debug')
+                        try:
+                            debug_records[arch] = debug_module['bundle'](
+                                dest, debug_root / arch,
+                                final_output.name + '.debug/' + arch)
+                        except (ValueError, OSError) as error:
+                            fail('retaining DWARF objects: ' + str(error))
+                    executables.append(dest)
+            if mode == '-c':
+                for path in inputs:
+                    merge(slice_outputs[str(path)], output or path.stem + '.o')
+            else:
+                merge(executables, output or 'a.out')
+                for arch, debug_record in debug_records.items():
+                    if debug_record['objects']:
+                        debug_record['architecture'] = arch
+                        debug_record['container_sha256'] = artifacts[-1]['sha256']
+                        manifest = debug_root / arch / (
+                            'manifest-' + debug_record['executable_sha256'] + '.json')
+                        manifest.write_text(json.dumps(debug_record, indent=2) + '\n')
+    finally:
+        if record_path:
+            record_path.write_text(json.dumps({'architectures': arches, 'sdk': str(sdk),
+                                              'inputs': input_records,
+                                              'commands': commands, 'outputs': artifacts,
+                                              'runtime_inputs': runtime_inputs,
+                                              'shared_spec_sha256': hashlib.sha256(shared_spec.read_bytes()).hexdigest() if shared_spec else None,
+                                              'status': 'failed' if sys.exc_info()[0] else 'passed'}, indent=2) + '\n')
+
+if __name__ == '__main__':
+    try:
+        main(sys.argv[1:])
+    except subprocess.CalledProcessError as error:
+        raise SystemExit(error.returncode)

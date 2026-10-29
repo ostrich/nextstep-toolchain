@@ -1,0 +1,546 @@
+{
+  "schema": 1,
+  "scope": "NEXTSTEP 3.3 NIHS and Intel OPENSTEP 4.2",
+  "apis": [
+    {
+      "api": "pthread_self",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_equal",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_create",
+      "status": "partial",
+      "contract": "Native default unlimited worker pool; native allocator exhaustion is not fully recoverable."
+    },
+    {
+      "api": "pthread_join",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_detach",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_exit",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_key_create",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_key_delete",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_getspecific",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_setspecific",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_once",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_cancel",
+      "status": "partial",
+      "contract": "Supported pthread cancellation points only; native libc blocking calls are not interposed."
+    },
+    {
+      "api": "pthread_testcancel",
+      "status": "partial",
+      "contract": "Managed Cthreads only."
+    },
+    {
+      "api": "pthread_setcancelstate",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_setcanceltype",
+      "status": "partial",
+      "contract": "Deferred only; asynchronous type returns ENOTSUP."
+    },
+    {
+      "api": "pthread_getschedparam",
+      "status": "partial",
+      "contract": "Queries qualified Mach timeshare policy; reports POSIX priority zero."
+    },
+    {
+      "api": "pthread_setschedparam",
+      "status": "partial",
+      "contract": "SCHED_OTHER, priority zero only."
+    },
+    {
+      "api": "pthread_setschedprio",
+      "status": "partial",
+      "contract": "Priority zero only."
+    },
+    {
+      "api": "pthread_getconcurrency",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_setconcurrency",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_kill",
+      "status": "partial",
+      "contract": "Signal zero only, for live registered threads."
+    },
+    {
+      "api": "pthread_sigmask",
+      "status": "rejected",
+      "contract": "Native masks are process-wide; per-thread masking is unavailable."
+    },
+    {
+      "api": "pthread_atfork",
+      "status": "partial",
+      "contract": "Used by new code compiled against the canonical fork overlay; old native imports cannot be retrofitted."
+    },
+    {
+      "api": "pthread_attr_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutexattr_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutexattr_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_condattr_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_condattr_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlockattr_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlockattr_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_barrierattr_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_barrierattr_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_getdetachstate",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_setdetachstate",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_getinheritsched",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_setinheritsched",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_getscope",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_setscope",
+      "status": "partial",
+      "contract": "PTHREAD_SCOPE_SYSTEM only; native worker limit must stay unlimited."
+    },
+    {
+      "api": "pthread_attr_getschedpolicy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_setschedpolicy",
+      "status": "partial",
+      "contract": "SCHED_OTHER only; FIFO/RR return ENOTSUP."
+    },
+    {
+      "api": "pthread_attr_getschedparam",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_setschedparam",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_attr_getstacksize",
+      "status": "rejected",
+      "contract": "Usable default size is not guessed from the allocation mask."
+    },
+    {
+      "api": "pthread_attr_setstacksize",
+      "status": "rejected",
+      "contract": "No qualified per-thread native-compatible stack allocator."
+    },
+    {
+      "api": "pthread_attr_getguardsize",
+      "status": "rejected",
+      "contract": "Native guard geometry is not a portable per-thread attribute."
+    },
+    {
+      "api": "pthread_attr_setguardsize",
+      "status": "rejected",
+      "contract": "No qualified per-thread native-compatible guard allocator."
+    },
+    {
+      "api": "pthread_mutexattr_gettype",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutexattr_settype",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutexattr_getpshared",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutexattr_setpshared",
+      "status": "partial",
+      "contract": "Process-private only; shared returns ENOTSUP."
+    },
+    {
+      "api": "pthread_mutexattr_getprotocol",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutexattr_setprotocol",
+      "status": "partial",
+      "contract": "PTHREAD_PRIO_NONE only."
+    },
+    {
+      "api": "pthread_mutexattr_getrobust",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutexattr_setrobust",
+      "status": "partial",
+      "contract": "Managed-thread, process-private robust ownership only."
+    },
+    {
+      "api": "pthread_mutexattr_getprioceiling",
+      "status": "rejected",
+      "contract": "Priority-protection protocol is unavailable."
+    },
+    {
+      "api": "pthread_mutexattr_setprioceiling",
+      "status": "rejected",
+      "contract": "Priority-protection protocol is unavailable."
+    },
+    {
+      "api": "pthread_condattr_getpshared",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_condattr_setpshared",
+      "status": "partial",
+      "contract": "Process-private only; shared returns ENOTSUP."
+    },
+    {
+      "api": "pthread_condattr_getclock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_condattr_setclock",
+      "status": "partial",
+      "contract": "CLOCK_REALTIME only."
+    },
+    {
+      "api": "pthread_rwlockattr_getpshared",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlockattr_setpshared",
+      "status": "partial",
+      "contract": "Process-private only; shared returns ENOTSUP."
+    },
+    {
+      "api": "pthread_barrierattr_getpshared",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_barrierattr_setpshared",
+      "status": "partial",
+      "contract": "Process-private only; shared returns ENOTSUP."
+    },
+    {
+      "api": "pthread_attr_getstack",
+      "status": "rejected",
+      "contract": "Native aligned Cproc stacks have no qualified per-thread allocator."
+    },
+    {
+      "api": "pthread_attr_setstack",
+      "status": "rejected",
+      "contract": "Native aligned Cproc stacks have no qualified per-thread allocator."
+    },
+    {
+      "api": "pthread_mutex_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutex_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_cond_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_cond_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlock_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlock_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutex_lock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutex_trylock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutex_unlock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutex_consistent",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_mutex_timedlock",
+      "status": "partial",
+      "contract": "Absolute realtime deadlines; Mach millisecond resolution and bounded clock-adjustment rechecks."
+    },
+    {
+      "api": "pthread_mutex_getprioceiling",
+      "status": "rejected",
+      "contract": "Priority-protection protocol is unavailable."
+    },
+    {
+      "api": "pthread_mutex_setprioceiling",
+      "status": "rejected",
+      "contract": "Priority-protection protocol is unavailable."
+    },
+    {
+      "api": "pthread_cond_signal",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_cond_broadcast",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_cond_wait",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_cond_timedwait",
+      "status": "partial",
+      "contract": "Absolute realtime deadlines; Mach millisecond resolution and bounded clock-adjustment rechecks."
+    },
+    {
+      "api": "pthread_rwlock_rdlock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlock_wrlock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlock_tryrdlock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlock_trywrlock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlock_unlock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_rwlock_timedrdlock",
+      "status": "partial",
+      "contract": "Absolute realtime deadlines; Mach millisecond resolution and bounded clock-adjustment rechecks."
+    },
+    {
+      "api": "pthread_rwlock_timedwrlock",
+      "status": "partial",
+      "contract": "Absolute realtime deadlines; Mach millisecond resolution and bounded clock-adjustment rechecks."
+    },
+    {
+      "api": "pthread_barrier_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_barrier_wait",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_barrier_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_spin_init",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_spin_lock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_spin_trylock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_spin_unlock",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_spin_destroy",
+      "status": "implemented",
+      "contract": "See family contract in pthreads.md; not a full POSIX certification."
+    },
+    {
+      "api": "pthread_cleanup_push",
+      "status": "partial",
+      "contract": "Managed exit/cancellation only; C++ forced unwinding is unavailable."
+    },
+    {
+      "api": "pthread_cleanup_pop",
+      "status": "partial",
+      "contract": "Paired lexical scope; C++ forced unwinding is unavailable."
+    },
+    {
+      "api": "pthread_getcpuclockid",
+      "status": "not-provided",
+      "contract": "No qualified per-thread clock-ID and clock_gettime ABI."
+    },
+    {
+      "api": "pthread_cond_clockwait",
+      "status": "not-provided",
+      "contract": "Only realtime waits are currently implemented."
+    },
+    {
+      "api": "pthread_mutex_clocklock",
+      "status": "not-provided",
+      "contract": "Only realtime waits are currently implemented."
+    },
+    {
+      "api": "pthread_rwlock_clockrdlock",
+      "status": "not-provided",
+      "contract": "Only realtime waits are currently implemented."
+    },
+    {
+      "api": "pthread_rwlock_clockwrlock",
+      "status": "not-provided",
+      "contract": "Only realtime waits are currently implemented."
+    },
+    {
+      "api": "sem_*",
+      "status": "not-provided",
+      "contract": "An async-signal-safe sem_post needs a different counter/IPC design."
+    },
+    {
+      "api": "pthread_attr_getstackaddr / pthread_attr_setstackaddr",
+      "status": "not-provided",
+      "contract": "Obsolete stack-address interfaces; custom stacks are not supported."
+    }
+  ]
+}

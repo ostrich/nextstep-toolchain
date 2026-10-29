@@ -1,0 +1,8 @@
+Seed assumptions:
+- clean seed contains `/dir`
+
+Corruption:
+- set `/dir` size to zero
+
+Primary expectation:
+- descent reports zero length directory

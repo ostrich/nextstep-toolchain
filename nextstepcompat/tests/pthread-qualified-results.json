@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "shared_minor": 20,
+  "runtime_sha256": "c73b0ee036783fe6d96168fcac8a39942d5156665480cbbaa4d09e2ed1b22320",
+  "static_build_record_sha256": "00a87d3a3c40c2f9d3f476f0e0f65b2f2319ac8ced0f2ad7141297c79ac47093",
+  "toolchain_manifest_sha256": "d81aad7fdcae95d0e1531ac856b79d102c7458f309090c2ea353147e17e3cab8",
+  "single_vcpu": true,
+  "targets": {
+    "m68k": {
+      "passed": true,
+      "native_halt": true,
+      "filesystem_clean": true,
+      "upstream_tests": 8,
+      "results_sha256": "fa8119053b90f68c5c2fa521b94117adad229cbb3e8fddea654dc50cfda85192",
+      "clock_mode": "Previous"
+    },
+    "i386": {
+      "passed": true,
+      "native_halt": true,
+      "filesystem_clean": true,
+      "upstream_tests": 8,
+      "results_sha256": "e85248831b1557e937c9e5fe6ce2a7d33717692ed071f4d9b4418ea6dc000579",
+      "clock_mode": "normal TCG"
+    },
+    "hppa": {
+      "passed": true,
+      "native_halt": true,
+      "filesystem_clean": true,
+      "upstream_tests": 8,
+      "results_sha256": "c62270f515a6edb10ee7b144c8c8d6cd03494ff83f8c42bf1a30e1d3c690e742",
+      "clock_mode": "normal TCG"
+    },
+    "sparc": {
+      "passed": true,
+      "native_halt": true,
+      "filesystem_clean": true,
+      "upstream_tests": 8,
+      "results_sha256": "094d5928b07007e699d60dc9bf7a815acfb68e8ea2886e64918d90b89bd73e5c",
+      "clock_mode": "shift=0,sleep=off"
+    },
+    "openstep-i386": {
+      "passed": true,
+      "native_halt": true,
+      "filesystem_clean": true,
+      "upstream_tests": 8,
+      "results_sha256": "e85248831b1557e937c9e5fe6ce2a7d33717692ed071f4d9b4418ea6dc000579",
+      "clock_mode": "normal TCG"
+    }
+  }
+}

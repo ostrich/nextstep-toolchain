@@ -1,0 +1,168 @@
+--- a/ld/symbols.c
++++ b/ld/symbols.c
+@@ -936,6 +936,80 @@
+  * merge_symbols() merges the symbols from the current object (cur_obj) into
+  * the merged symbol table.
+  */
++/* Import archives can repeat an older compatible view of the same fixed-VM
++ * module. Only symbol-only members with a matching module marker qualify;
++ * ordinary duplicate absolute symbols retain the usual diagnostic. */
++static enum bool
++same_fvmlib_symbol_module(struct object_file *a, struct object_file *b)
++{
++    struct nlist *sa, *sb;
++    char *sta, *stb;
++    unsigned long i, j;
++    struct object_file *objects[2];
++    unsigned long n, definitions[2] = {0, 0}, values[2] = {0, 0};
++    char *names[2] = {NULL, NULL};
++    unsigned char marker_type = N_ABS | N_EXT;
++
++    if(a == NULL || b == NULL || a->symtab == NULL || b->symtab == NULL)
++        return(FALSE);
++    objects[0] = a;
++    objects[1] = b;
++    for(n = 0; n < 2; n++){
++        sa = (struct nlist *)(objects[n]->obj_addr + objects[n]->symtab->symoff);
++        for(i = 0; i < objects[n]->symtab->nsyms; i++){
++            if((sa[i].n_type & N_STAB) || !(sa[i].n_type & N_EXT))
++                continue;
++            if((sa[i].n_type & N_TYPE) == N_UNDF && sa[i].n_value == 0)
++                continue;
++            if((sa[i].n_type & N_TYPE) != N_ABS)
++                return(FALSE);
++            definitions[n]++;
++            names[n] = objects[n]->obj_addr + objects[n]->symtab->stroff + sa[i].n_un.n_strx;
++            values[n] = sa[i].n_value;
++        }
++    }
++    if(a->fvmlib_stuff && b->fvmlib_stuff){
++        char *load_names[2] = {NULL, NULL};
++        struct mach_header *mh;
++        struct load_command *lc;
++        struct fvmlib_command *fl;
++        for(n = 0; n < 2; n++){
++            mh = (struct mach_header *)objects[n]->obj_addr;
++            lc = (struct load_command *)(objects[n]->obj_addr + sizeof(*mh));
++            for(i = 0; i < mh->ncmds; i++){
++                if(lc->cmd == LC_LOADFVMLIB){
++                    if(load_names[n] != NULL) return(FALSE);
++                    fl = (struct fvmlib_command *)lc;
++                    load_names[n] = (char *)fl + fl->fvmlib.name.offset;
++                }
++                lc = (struct load_command *)((char *)lc + lc->cmdsize);
++            }
++        }
++        return(load_names[0] != NULL && load_names[1] != NULL &&
++               strcmp(load_names[0], load_names[1]) == 0);
++    }
++    /* __.FVMLIB_REF has one bare library-name definition and undefined
++     * file-definition markers. Coalesce only matching reference modules. */
++    if(definitions[0] == 1 && definitions[1] == 1 && values[0] == 0 && values[1] == 0 &&
++       names[0][0] != '_' && names[0][0] != '.' && strcmp(names[0], names[1]) == 0)
++        marker_type = N_UNDF | N_EXT;
++    sa = (struct nlist *)(a->obj_addr + a->symtab->symoff);
++    sb = (struct nlist *)(b->obj_addr + b->symtab->symoff);
++    sta = a->obj_addr + a->symtab->stroff;
++    stb = b->obj_addr + b->symtab->stroff;
++    for(i = 0; i < a->symtab->nsyms; i++){
++        if(sa[i].n_type != marker_type || sa[i].n_value != 0 ||
++           strncmp(sta + sa[i].n_un.n_strx, ".file_definition_", 17) != 0)
++            continue;
++        for(j = 0; j < b->symtab->nsyms; j++){
++            if(sb[j].n_type == marker_type && sb[j].n_value == 0 &&
++               strcmp(sta + sa[i].n_un.n_strx, stb + sb[j].n_un.n_strx) == 0)
++                return(TRUE);
++        }
++    }
++    return(FALSE);
++}
++
+ __private_extern__
+ void
+ merge_symbols(void)
+@@ -1571,6 +1645,18 @@
+ printf("symbol: %s is coalesced\n", merged_symbol->nlist.n_un.n_name);
+ #endif
+ 		    }
++                  else if((merged_symbol->nlist.n_type & N_TYPE) == N_ABS &&
++                          (object_symbols[i].n_type & N_TYPE) == N_ABS &&
++                          merged_symbol->nlist.n_value == object_symbols[i].n_value &&
++                          same_fvmlib_symbol_module(merged_symbol->definition_object,
++                                                   cur_obj)){
++                      if(object_symbols[i].n_type & N_PEXT){
++                          cur_obj->nprivatesym--;
++                          nmerged_private_symbols--;
++                      }
++                      else
++                          cur_obj->nextdefsym--;
++                  }
+ #ifdef KLD
+                   /*
+                    * For KLD if both symbols are absolute symbols with the
+--- a/ld/fvmlibs.c
++++ b/ld/fvmlibs.c
+@@ -49,6 +49,46 @@
+ /* the pointer to the head of the fixed VM shared library segments */
+ __private_extern__ struct merged_segment *fvmlib_segments = NULL;
+ 
++/* Reservation hints are part of a fixed-VM identity, not just its path. */
++static enum bool
++same_fvmlib_segments(struct object_file *a, struct object_file *b)
++{
++    struct object_file *objects[2];
++    struct mach_header *mh, *other;
++    struct load_command *lc, *candidate;
++    struct segment_command *left, *right;
++    unsigned long pass, i, j, matches;
++    objects[0] = a;
++    objects[1] = b;
++    for(pass = 0; pass < 2; pass++){
++        mh = (struct mach_header *)objects[pass]->obj_addr;
++        other = (struct mach_header *)objects[1-pass]->obj_addr;
++        lc = (struct load_command *)(objects[pass]->obj_addr + sizeof(*mh));
++        for(i = 0; i < mh->ncmds; i++){
++            if(lc->cmd == LC_SEGMENT &&
++               ((struct segment_command *)lc)->flags == SG_FVMLIB){
++                left = (struct segment_command *)lc;
++                candidate = (struct load_command *)(objects[1-pass]->obj_addr + sizeof(*other));
++                matches = 0;
++                for(j = 0; j < other->ncmds; j++){
++                    if(candidate->cmd == LC_SEGMENT){
++                        right = (struct segment_command *)candidate;
++                        if(right->flags == SG_FVMLIB &&
++                           left->vmaddr == right->vmaddr && left->vmsize == right->vmsize &&
++                           left->maxprot == right->maxprot && left->initprot == right->initprot &&
++                           memcmp(left->segname, right->segname, sizeof(left->segname)) == 0)
++                            matches++;
++                    }
++                    candidate = (struct load_command *)((char *)candidate + candidate->cmdsize);
++                }
++                if(matches != 1) return(FALSE);
++            }
++            lc = (struct load_command *)((char *)lc + lc->cmdsize);
++        }
++    }
++    return(TRUE);
++}
++
+ static struct merged_fvmlib *lookup_merged_fvmlib(struct fvmlib_command *fl);
+ static void add_fvmlib_segment(struct segment_command *sg, char *fvmlib_name);
+ 
+@@ -181,6 +221,16 @@
+ 	while(*p){
+ 	    mfl = *p;
+ 	    if(strcmp(mfl->fvmlib_name, fvmlib_name) == 0){
++        if(mfl->fl->cmd == LC_LOADFVMLIB && fl->cmd == LC_LOADFVMLIB){
++            if(mfl->fl->fvmlib.header_addr != fl->fvmlib.header_addr ||
++               !same_fvmlib_segments(mfl->definition_object, cur_obj))
++                error_with_cur_obj("conflicting identity for fixed VM library %s",
++                                   fvmlib_name);
++            else if(mfl->fl->fvmlib.minor_version < fl->fvmlib.minor_version)
++                mfl->fl->fvmlib.minor_version = fl->fvmlib.minor_version;
++            mfl->multiple = TRUE;
++            return(mfl);
++        }
+ 		if(mfl->multiple == FALSE){
+ 		    if(mfl->fl->cmd == LC_IDFVMLIB)
+ 			error("multiple object files identify fixed VM library "

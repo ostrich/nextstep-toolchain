@@ -1,0 +1,58 @@
+--- a/ld/sections.c
++++ b/ld/sections.c
+@@ -5297,7 +5297,15 @@
+ 	    content = &(msg->content_sections);
+ 	    while(*content){
+ 		ms = *content;
+-		if(ms->s.flags & S_ATTR_NO_DEAD_STRIP)
++		/* Classic NeXT crt0 walks these regular-section tables directly.
++		 * They predate S_MOD_INIT_FUNC_POINTERS, so treating them as
++		 * ordinary unused data discards required startup relocations. */
++		if((ms->s.flags & S_ATTR_NO_DEAD_STRIP) ||
++		   (strncmp(ms->s.segname, SEG_TEXT, 16) == 0 &&
++		    (strncmp(ms->s.sectname, SECT_FVMLIB_INIT0, 16) == 0 ||
++		     strncmp(ms->s.sectname, SECT_FVMLIB_INIT1, 16) == 0 ||
++		     strncmp(ms->s.sectname, "__constructor", 16) == 0 ||
++		     strncmp(ms->s.sectname, "__destructor", 16) == 0)))
+ 		    mark_all_fine_relocs_live_in_section(ms);
+ 		content = &(ms->next);
+ 	    }
+--- a/ld/layout.c
++++ b/ld/layout.c
+@@ -292,6 +292,13 @@
+ 	 * live items.
+ 	 */
+ 	if(dead_strip == TRUE){
++	    /* The relocation walkers for these restored NeXT targets are not
++	     * implemented. Reject even trivial probe links instead of letting
++	     * configure enable an option that fails on real input objects. */
++	    if(arch_flag.cputype == CPU_TYPE_HPPA ||
++	       arch_flag.cputype == CPU_TYPE_SPARC)
++		fatal("-dead_strip not supported with cputype (%d)",
++		      arch_flag.cputype);
+ 	    /*
+ 	     * Mark the fine_relocs and symbols that are live.
+ 	     */
+--- a/ld/generic_reloc.c
++++ b/ld/generic_reloc.c
+@@ -509,6 +509,20 @@
+ 		    if(local_map->nfine_relocs == 0 && 
+ 		       (pair_local_map == NULL ||
+ 			pair_local_map->nfine_relocs == 0) ){
++			/* Empty section boundary labels have no atoms. A liveness
++			 * query must not fall through and relocate the input bytes:
++			 * doing so adjusts crt0's table addresses on every walk. */
++			if(refs != NULL){
++			    if(local_map->s->size != 0 ||
++			       (pair_local_map != NULL && pair_local_map->s->size != 0)){
++				error_with_cur_obj("missing fine relocation mapping "
++				    "for nonempty liveness reference");
++				return;
++			    }
++			    refs->ref1.ref_type = LIVE_REF_NONE;
++			    refs->ref2.ref_type = LIVE_REF_NONE;
++			    return;
++			}
+ 			if(r_type == GENERIC_RELOC_SECTDIFF ||
+ 			   r_type == GENERIC_RELOC_LOCAL_SECTDIFF){
+ 			    value = - local_map->s->addr

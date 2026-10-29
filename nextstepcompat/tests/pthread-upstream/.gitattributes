@@ -1,0 +1,3 @@
+# Preserve the pinned upstream test sources, including their original whitespace.
+*.c -whitespace
+*.h -whitespace

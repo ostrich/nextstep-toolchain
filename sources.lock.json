@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "gcc": {
+    "version": "16.2.0",
+    "url": "https://gcc.gnu.org/pub/gcc/releases/gcc-16.2.0/gcc-16.2.0.tar.xz",
+    "sha256": "e6738e29597f733270731aa90600f37ffdc045079dfc27ec7e8192cc81085c3e",
+    "sha512": "c51c30ca7422d0cbecf504b2e0f33c3aca31e0f90a76b65217f465163fa6fa17b3f5de39e145c47e5bab90ac0ce7fff3b03c8d553ae36e01faaea5a50f8648d1",
+    "checksum_url": "https://gcc.gnu.org/pub/gcc/releases/gcc-16.2.0/sha512.sum",
+    "signature_url": "https://gcc.gnu.org/pub/gcc/releases/gcc-16.2.0/gcc-16.2.0.tar.xz.sig"
+  },
+  "reference_port": {
+    "repository": "https://github.com/turbolent/openstep-pkg",
+    "revision": "b47af8dabdb61115f9771406b62cfbb0eb19a1bd"
+  },
+  "next_compiler_reference": {
+    "repository": "https://github.com/apple-oss-distributions/cc",
+    "revision": "115f162c9a1b1c17adf7753739b07600724f7028"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "host_tools": "work/release-host-tools",
+  "targets": {
+    "i386": {
+      "compiler": "work/release-compilers/i386",
+      "basic_runtime": "work/runtime-host-i386",
+      "cxx_runtime": "work/release-targets/cxx-i386",
+      "atomic_runtime": "work/release-targets/atomic-i386"
+    },
+    "m68k": {
+      "compiler": "work/release-compilers/m68k",
+      "basic_runtime": "work/runtime-host-m68k",
+      "cxx_runtime": "work/release-targets/cxx-m68k",
+      "atomic_runtime": "work/release-targets/atomic-m68k"
+    },
+    "sparc": {
+      "compiler": "work/release-compilers/sparc",
+      "basic_runtime": "work/runtime-host-sparc",
+      "cxx_runtime": "work/release-targets/cxx-sparc",
+      "atomic_runtime": "work/release-targets/atomic-sparc"
+    },
+    "hppa": {
+      "compiler": "work/release-compilers/hppa",
+      "basic_runtime": "work/runtime-host-hppa",
+      "cxx_runtime": "work/release-targets/cxx-hppa",
+      "atomic_runtime": "work/release-targets/atomic-hppa"
+    }
+  },
+  "shared_tools": "work/release-shared-tools"
+}

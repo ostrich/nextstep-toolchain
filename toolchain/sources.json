@@ -1,0 +1,12 @@
+{
+  "apple_cctools": {
+    "url": "https://github.com/apple-oss-distributions/cctools.git",
+    "tag": "cctools-1010.6",
+    "revision": "7a5450708479bbff61527d5e0c32a3f7b7e4c1d0"
+  },
+  "foreign_headers": {
+    "url": "https://github.com/tpoechtrager/cctools-port.git",
+    "revision": "904de2a71d4da6a9b30d2efaf912a10ddc7d9ddb",
+    "subdirectory": "cctools/include/foreign"
+  }
+}

@@ -1,0 +1,11 @@
+--- a/mkshlib/target.c
++++ b/mkshlib/target.c
+@@ -390,6 +390,8 @@
+ 		      sizeof(struct fvmlib_command) +
+ 		      fvmlib_name_size;
+ 	buffer = allocate(object_size);
++	/* The padded library name is part of the emitted load command. */
++	memset(buffer, 0, object_size);
+ 
+ 	offset = 0;
+ 	mh = (struct mach_header *)(buffer + offset);

@@ -1,0 +1,9 @@
+0001-linux-host-and-nextstep-formats.patch
+0002-linux-bsd-archive-tool.patch
+0003-preserve-zerofill-before-local-common.patch
+0004-explicit-ordered-atom-alignment.patch
+0005-preserve-nextstep-startup-tables-with-dead-strip.patch
+0006-coalesce-compatible-fixed-vm-imports.patch
+0007-read-dwarf4-debug-maps.patch
+0008-allow-bounded-zero-padding-after-classic-string-tables.patch
+0009-disable-uuid-in-strip-relocatable-debug-links.patch

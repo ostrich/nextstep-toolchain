@@ -1,0 +1,632 @@
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -2010,6 +2010,12 @@
+ 	tm_file="${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/nextstep.h"
+ 	with_cpu=${with_cpu:-i386}
+ 	use_gcc_stdint=provide
++	tm_p_file="${tm_p_file} nextstep-protos.h"
++	tmake_file="${tmake_file} t-nextstep"
++	extra_objs="${extra_objs} nextstep.o"
++	c_target_objs="${c_target_objs} nextstep-c.o"
++	cxx_target_objs="${cxx_target_objs} nextstep-c.o"
++	target_has_targetcm=yes
+ 	;;
+ i[34567]86-*-elfiamcu)
+ 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/iamcu.h"
+--- a/gcc/config/i386/nextstep.h
++++ b/gcc/config/i386/nextstep.h
+@@ -28,6 +28,8 @@
+ #define TARGET_OS_CPP_BUILTINS()                         \
+   do {                                                  \
+     builtin_define ("NeXT");                             \
++    builtin_define ("__NeXT__");                         \
++    builtin_define ("__NeXT");                             \
+     builtin_define_std ("unix");                         \
+     builtin_define ("__MACH__");                         \
+     builtin_define ("__LITTLE_ENDIAN__");                \
+@@ -95,3 +97,14 @@
+ #define LIB_SPEC "-lsys_s"
+ #undef LINK_SPEC
+ #define LINK_SPEC ""
++
++/* Classic runtime, target sections, and NeXT header preprocessing.  */
++#define NEXT_OBJC_RUNTIME 1
++#define NEXTSTEP_CLASSIC_RUNTIME 1
++#define NEXTSTEP_OBJC_METHOD_STACK_OFFSET 8
++#define OBJC_DEFAULT_CONSTANT_STRING_CLASS_NAME "NXConstantString"
++#define REGISTER_SUBTARGET_PRAGMAS nextstep_register_cpp
++#define TARGET_ASM_INIT_SECTIONS nextstep_init_sections
++#define TARGET_ASM_SELECT_SECTION nextstep_select_section
++#define TARGET_ASM_CONSTRUCTOR nextstep_asm_out_constructor
++#define TARGET_ASM_DESTRUCTOR nextstep_asm_out_destructor
+--- /dev/null
++++ b/gcc/config/nextstep-protos.h
+@@ -0,0 +1,8 @@
++/* Classic NeXT target hooks.  SPDX-License-Identifier: GPL-3.0-or-later */
++extern void nextstep_init_sections (void);
++extern section *nextstep_select_section (tree, int, unsigned HOST_WIDE_INT);
++extern void nextstep_register_cpp (void);
++#ifdef RTX_CODE
++extern void nextstep_asm_out_constructor (rtx, int);
++extern void nextstep_asm_out_destructor (rtx, int);
++#endif
+--- /dev/null
++++ b/gcc/config/nextstep.cc
+@@ -0,0 +1,134 @@
++/* Classic NeXT section placement for GCC.
++   SPDX-License-Identifier: GPL-3.0-or-later
++   Directive ordering follows the original NeXT target.  Metadata tags follow
++   GCC's modern traditional NeXT runtime and Darwin section selection.  */
++#include "config.h"
++#include "system.h"
++#include "coretypes.h"
++#include "backend.h"
++#include "target.h"
++#include "rtl.h"
++#include "tree.h"
++#include "stringpool.h"
++#include "attribs.h"
++#include "output.h"
++#include "diagnostic-core.h"
++
++struct nextstep_metadata_section
++{
++  const char *tag;
++  const char *directive;
++  section *sect;
++};
++
++/* Unnamed sections are rooted by varasm's unnamed_sections list.  */
++static nextstep_metadata_section metadata[] = {
++  {"V1_CLAS", ".objc_class", NULL},
++  {"V1_META", ".objc_meta_class", NULL},
++  {"V1_CACM", ".objc_cat_cls_meth", NULL},
++  {"V1_CAIM", ".objc_cat_inst_meth", NULL},
++  {"V1_CLCM", ".objc_cls_meth", NULL},
++  {"V1_CLIM", ".objc_inst_meth", NULL},
++  {"V1_SRFS", ".objc_message_refs", NULL},
++  {"V1_SYMT", ".objc_symbols", NULL},
++  {"V1_CATG", ".objc_category", NULL},
++  {"V1_PROT", ".objc_protocol", NULL},
++  {"V1_CLCV", ".objc_class_vars", NULL},
++  {"V1_CLIV", ".objc_instance_vars", NULL},
++  {"V1_MODU", ".objc_module_info", NULL},
++  {"V1_CSTR", ".objc_string_object", NULL},
++  {"V1_CLSN", ".objc_class_names", NULL},
++  {"V1_METN", ".objc_meth_var_names", NULL},
++  {"V1_METT", ".objc_meth_var_types", NULL},
++  {"V1_CLRF", ".objc_cls_refs", NULL}
++};
++static section *constructors, *destructors;
++
++static void
++nextstep_objc_section (const char *directive)
++{
++  static bool initialized;
++  if (!initialized)
++    {
++      initialized = true;
++      /* NeXT as expects the classic section ordering before population.  */
++      for (unsigned i = 0; i < ARRAY_SIZE (metadata); ++i)
++        switch_to_section (metadata[i].sect);
++    }
++  output_section_asm_op (directive);
++}
++
++void
++nextstep_init_sections (void)
++{
++  readonly_data_section = get_unnamed_section (0, output_section_asm_op, ".const");
++  constructors = get_unnamed_section (SECTION_WRITE, output_section_asm_op,
++                                     ".constructor");
++  destructors = get_unnamed_section (SECTION_WRITE, output_section_asm_op,
++                                    ".destructor");
++  for (unsigned i = 0; i < ARRAY_SIZE (metadata); ++i)
++    metadata[i].sect = get_unnamed_section (SECTION_WRITE,
++                                          nextstep_objc_section,
++                                          metadata[i].directive);
++}
++
++section *
++nextstep_select_section (tree decl, int reloc, unsigned HOST_WIDE_INT align)
++{
++  if (DECL_P (decl))
++    {
++      tree attr = lookup_attribute ("OBJC1META", DECL_ATTRIBUTES (decl));
++      if (attr && TREE_VALUE (attr)
++          && TREE_CODE (TREE_VALUE (attr)) == IDENTIFIER_NODE)
++        {
++          const char *tag = IDENTIFIER_POINTER (TREE_VALUE (attr));
++          for (unsigned i = 0; i < ARRAY_SIZE (metadata); ++i)
++            if (!strcmp (tag, metadata[i].tag))
++              return metadata[i].sect;
++          /* Protocol lists are referenced indirectly, as on Darwin ABI 0.  */
++          if (!strcmp (tag, "V1_PCLM") || !strcmp (tag, "V1_CLPR")
++              || !strcmp (tag, "V1_PRFS"))
++            return metadata[2].sect;
++          if (!strcmp (tag, "V1_PNSM"))
++            return metadata[3].sect;
++          /* Image info and otherwise-unrecognized metadata remain writable. */
++          return data_section;
++        }
++    }
++  /* Constant-string CONST_DECLs reach varasm as constructor values, so their
++     declaration metadata is no longer available here.  */
++  if (TREE_CODE (decl) == CONSTRUCTOR && TREE_TYPE (decl)
++      && TREE_CODE (TREE_TYPE (decl)) == RECORD_TYPE
++      && TYPE_NAME (TREE_TYPE (decl)))
++    {
++      tree name = TYPE_NAME (TREE_TYPE (decl));
++      if (TREE_CODE (name) == TYPE_DECL)
++        name = DECL_NAME (name);
++      if (name && TREE_CODE (name) == IDENTIFIER_NODE
++          && !strcmp (IDENTIFIER_POINTER (name), "__builtin_ObjCString"))
++        return metadata[13].sect;
++    }
++  return default_select_section (decl, reloc, align);
++}
++
++void
++nextstep_asm_out_constructor (rtx symbol, int priority)
++{
++  if (priority != DEFAULT_INIT_PRIORITY)
++    sorry ("constructor priorities are not supported on classic NeXT");
++  switch_to_section (constructors);
++  assemble_align (POINTER_SIZE);
++  assemble_integer (symbol, POINTER_SIZE / BITS_PER_UNIT, POINTER_SIZE, 1);
++  fputs (".reference .constructors_used\n", asm_out_file);
++}
++
++void
++nextstep_asm_out_destructor (rtx symbol, int priority)
++{
++  if (priority != DEFAULT_INIT_PRIORITY)
++    sorry ("destructor priorities are not supported on classic NeXT");
++  switch_to_section (destructors);
++  assemble_align (POINTER_SIZE);
++  assemble_integer (symbol, POINTER_SIZE / BITS_PER_UNIT, POINTER_SIZE, 1);
++  fputs (".reference .destructors_used\n", asm_out_file);
++}
+--- /dev/null
++++ b/gcc/config/nextstep-c.cc
+@@ -0,0 +1,52 @@
++/* C-family support for classic NeXT targets.
++   SPDX-License-Identifier: GPL-3.0-or-later
++   Class archive references follow GCC's Darwin C-family implementation.  */
++#include "config.h"
++#include "system.h"
++#include "coretypes.h"
++#include "target.h"
++#include "tree.h"
++#include "c-family/c-common.h"
++#include "c-family/c-target.h"
++#include "c-family/c-target-def.h"
++#include "cgraph.h"
++#include "c-family/c-pragma.h"
++
++void
++nextstep_register_cpp (void)
++{
++  cpp_get_options (parse_in)->nextstep_include_concat = 1;
++  /* Match the original compiler's default SDK namespace in GNU modes.
++     Command-line -D/-U options are processed after target registration.  */
++  if (!flag_iso)
++    cpp_define (parse_in, "_NEXT_SOURCE");
++  /* SDK protocol declarations are selected by this compatibility feature.  */
++  cpp_define (parse_in, "NX_COMPILER_RELEASE_3_0=300");
++}
++
++static void
++nextstep_class_reference (const char *name)
++{
++  char *text = concat (".reference\t", name, NULL);
++  symtab->finalize_toplevel_asm (build_string (strlen (text), text));
++  free (text);
++}
++
++static void
++nextstep_class_definition (const char *name)
++{
++  const char *symbol = targetm.strip_name_encoding (name);
++  char *text = concat (".globl\t", symbol, "\n", symbol, " = 0", NULL);
++  symtab->finalize_toplevel_asm (build_string (strlen (text), text));
++  free (text);
++}
++
++#undef TARGET_OBJC_DECLARE_UNRESOLVED_CLASS_REFERENCE
++#define TARGET_OBJC_DECLARE_UNRESOLVED_CLASS_REFERENCE nextstep_class_reference
++#undef TARGET_OBJC_DECLARE_CLASS_DEFINITION
++#define TARGET_OBJC_DECLARE_CLASS_DEFINITION nextstep_class_definition
++
++#undef TARGET_CXX_SYSTEM_HEADERS_IMPLICIT_EXTERN_C
++#define TARGET_CXX_SYSTEM_HEADERS_IMPLICIT_EXTERN_C true
++
++struct gcc_targetcm targetcm = TARGETCM_INITIALIZER;
+--- /dev/null
++++ b/gcc/config/t-nextstep
+@@ -0,0 +1,8 @@
++# Classic NeXT target support.  SPDX-License-Identifier: GPL-3.0-or-later
++nextstep.o: $(srcdir)/config/nextstep.cc
++	$(COMPILE) $<
++	$(POSTCOMPILE)
++
++nextstep-c.o: $(srcdir)/config/nextstep-c.cc
++	$(COMPILE) $<
++	$(POSTCOMPILE)
+--- a/gcc/objc/objc-next-runtime-abi-01.cc
++++ b/gcc/objc/objc-next-runtime-abi-01.cc
+@@ -26,6 +26,7 @@
+ #include "config.h"
+ #include "system.h"
+ #include "coretypes.h"
++#include "tm.h"
+ #include "tree.h"
+ #include "stringpool.h"
+ #include "attribs.h"
+@@ -59,7 +60,10 @@
+ #include "objc-encoding.h"
+ 
+ /* NeXT ABI 0 and 1 private definitions.  */
+-#define DEF_CONSTANT_STRING_CLASS_NAME "NSConstantString"
++#ifndef OBJC_DEFAULT_CONSTANT_STRING_CLASS_NAME
++#define OBJC_DEFAULT_CONSTANT_STRING_CLASS_NAME "NSConstantString"
++#endif
++#define DEF_CONSTANT_STRING_CLASS_NAME OBJC_DEFAULT_CONSTANT_STRING_CLASS_NAME
+ 
+ #define TAG_GETCLASS			"objc_getClass"
+ #define TAG_GETMETACLASS		"objc_getMetaClass"
+@@ -92,7 +96,11 @@
+ /* The version identifies which language generation and runtime the
+    module (file) was compiled for, and is recorded in the module
+    descriptor.  */
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++#define OBJC_VERSION 5
++#else
+ #define OBJC_VERSION			(flag_objc_abi >= 1 ? 7 : 6)
++#endif
+ 
+ #define UTAG_CLASS_EXT			"_objc_class_ext"
+ #define UTAG_PROPERTY_LIST		"_prop_list_t"
+@@ -139,6 +147,15 @@
+ bool
+ objc_next_runtime_abi_01_init (objc_runtime_hooks *rthooks)
+ {
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  if (flag_objc_abi != 0 || flag_objc_exceptions || flag_objc_gc
++      || !flag_nil_receivers || flag_objc_direct_dispatch)
++    {
++      error ("requested Objective-C runtime feature is unavailable on classic NeXT");
++      return false;
++    }
++#endif
++
+   if (flag_objc_exceptions
+       && !flag_objc_sjlj_exceptions)
+     {
+@@ -254,7 +271,15 @@
+   /* For all NeXT objc ABIs -fobjc-call-cxx-cdtors is on by
+      default.  */
+   if (!OPTION_SET_P (flag_objc_call_cxx_cdtors))
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++    global_options.x_flag_objc_call_cxx_cdtors = 0;
++#else
+     global_options.x_flag_objc_call_cxx_cdtors = 1;
++#endif
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  if (flag_objc_call_cxx_cdtors)
++    error ("automatic C++ ivar construction requires a newer Objective-C runtime");
++#endif
+ #endif
+ 
+   /* Set up attributes to be attached to the meta-data so that they
+@@ -994,6 +1019,16 @@
+ static bool
+ next_runtime_abi_01_setup_const_string_class_decl (void)
+ {
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  /* Version-five loaders patch zero isa fields to NXConstantString.  */
++  if (strcmp (constant_string_class_name, "NXConstantString"))
++    {
++      error ("classic NeXT constant strings require NXConstantString");
++      return false;
++    }
++  return true;
++#else
++
+   if (!constant_string_global_id)
+     {
+       /* Hopefully, this should not represent a serious limitation.  */
+@@ -1005,6 +1040,7 @@
+   string_class_decl = lookup_name (constant_string_global_id);
+ 
+   return (string_class_decl != NULL_TREE);
++#endif
+ }
+ 
+ static tree
+@@ -1016,8 +1052,13 @@
+ 
+   /* NeXT:   (NSConstantString *) & ((__builtin_ObjCString) { isa, string, length })   */
+   fields = TYPE_FIELDS (internal_const_str_type);
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
+   CONSTRUCTOR_APPEND_ELT (v, fields,
+-			  build_unary_op (loc, ADDR_EXPR, string_class_decl, 0));
++                          convert (TREE_TYPE (fields), null_pointer_node));
++#else
++  CONSTRUCTOR_APPEND_ELT (v, fields,
++                          build_unary_op (loc, ADDR_EXPR, string_class_decl, 0));
++#endif
+ 
+   fields = DECL_CHAIN (fields);
+   CONSTRUCTOR_APPEND_ELT (v, fields,
+@@ -2381,8 +2422,14 @@
+     generate_v1_protocols ();
+ 
+   /* Pass summary information to the runtime.  */
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  /* Version-five startup unconditionally dereferences the module symtab,
++     including modules containing only selectors or constant strings.  */
++  generate_objc_symtab_decl ();
++#else
+   if (imp_count || cat_count)
+     generate_objc_symtab_decl ();
++#endif
+ 
+   vers = OBJC_VERSION;
+   attr = build_tree_list (objc_meta, meta_modules);
+--- a/gcc/objc/objc-encoding.cc
++++ b/gcc/objc/objc-encoding.cc
+@@ -20,6 +20,7 @@
+ #include "config.h"
+ #include "system.h"
+ #include "coretypes.h"
++#include "tm.h"
+ #include "tree.h"
+ #include "options.h"
+ #include "stringpool.h"
+@@ -101,6 +102,12 @@
+ {
+   tree parms;
+   int parm_offset, i;
++#ifdef NEXTSTEP_OBJC_METHOD_STACK_OFFSET
++  /* Classic runtime forwarding indexes the original machine argument frame.  */
++  const int frame_base = NEXTSTEP_OBJC_METHOD_STACK_OFFSET;
++#else
++  const int frame_base = 0;
++#endif
+   char buf[40];
+   tree result;
+ 
+@@ -136,11 +143,11 @@
+       parm_offset += sz;
+     }
+ 
+-  sprintf (buf, "%d@0:%d", parm_offset, i);
++  sprintf (buf, "%d@%d:%d", parm_offset, frame_base, frame_base + i);
+   obstack_grow (&util_obstack, buf, strlen (buf));
+ 
+   /* Argument types.  */
+-  parm_offset = 2 * i;
++  parm_offset = 2 * i + frame_base;
+   for (parms = METHOD_SEL_ARGS (method_decl); parms;
+        parms = DECL_CHAIN (parms))
+     {
+--- a/gcc/objc/objc-runtime-shared-support.cc
++++ b/gcc/objc/objc-runtime-shared-support.cc
+@@ -32,6 +32,7 @@
+ #endif
+ #include "c-family/c-objc.h"
+ #include "objc-act.h"
++#include "attribs.h"
+ 
+ /* When building Objective-C++, we are not linking against the C front-end
+    and so need to replicate the C tree-construction functions in some way.  */
+@@ -133,6 +134,26 @@
+ void
+ finish_var_decl (tree var, tree initializer)
+ {
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  /* The old runtime and debugger scan fixed-size metadata records directly.
++     Performance over-alignment would introduce apparent records in padding.
++     Declare the real alignment before optimization, not just in assembly.  */
++  if (flag_next_runtime)
++    {
++      tree attr = lookup_attribute ("OBJC1META", DECL_ATTRIBUTES (var));
++      if (attr && TREE_VALUE (attr)
++          && TREE_CODE (TREE_VALUE (attr)) == IDENTIFIER_NODE)
++        {
++          const char *tag = IDENTIFIER_POINTER (TREE_VALUE (attr));
++          bool string_p = (!strcmp (tag, "V1_CLSN")
++                           || !strcmp (tag, "V1_METN")
++                           || !strcmp (tag, "V1_METT")
++                           || !strcmp (tag, "V1_STRG"));
++          SET_DECL_ALIGN (var, string_p ? BITS_PER_UNIT : 32);
++          DECL_USER_ALIGN (var) = 1;
++        }
++    }
++#endif
+   finish_decl (var, input_location, initializer, NULL_TREE, NULL_TREE);
+ }
+ 
+--- a/gcc/objc/objc-act.cc
++++ b/gcc/objc/objc-act.cc
+@@ -380,6 +380,13 @@
+   /* Set up stuff used by FE parser and all runtimes.  */
+   errbuf = XNEWVEC (char, 1024 * 10);
+   objc_encoding_init ();
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  if (flag_next_runtime && flag_objc_abi != 0)
++    {
++      error ("classic NeXT requires Objective-C ABI version zero");
++      return false;
++    }
++#endif
+   /* ... and then check flags and set-up for the selected runtime ... */
+   if (flag_next_runtime && flag_objc_abi >= 2)
+     ok = objc_next_runtime_abi_02_init (&runtime);
+--- a/libcpp/directives.cc
++++ b/libcpp/directives.cc
+@@ -877,6 +877,28 @@
+       memcpy (fname, header->val.str.text + 1, header->val.str.len - 2);
+       fname[header->val.str.len - 2] = '\0';
+       *pangle_brackets = header->type == CPP_HEADER_NAME;
++
++      /* Original NeXT ARCH_INCLUDE headers expand to adjacent quoted path
++         fragments.  Keep this extension disabled for other targets.  */
++      if (header->type == CPP_STRING
++          && CPP_OPTION (pfile, nextstep_include_concat))
++        {
++          size_t length = header->val.str.len - 2;
++          const cpp_token *next = get_token_no_padding (pfile);
++          while (next->type == CPP_STRING && next->val.str.text[0] == '"')
++            {
++              size_t tail = next->val.str.len - 2;
++              if (tail > (size_t) -1 - length - 1)
++                xmalloc_failed ((size_t) -1);
++              fname = XRESIZEVEC (char, fname, length + tail + 1);
++              memcpy (fname + length, next->val.str.text + 1, tail);
++              length += tail;
++              fname[length] = '\0';
++              next = get_token_no_padding (pfile);
++            }
++          if (next->type != CPP_EOF)
++            _cpp_backup_tokens (pfile, 1);
++        }
+     }
+   else if (header->type == CPP_LESS)
+     {
+--- a/libcpp/include/cpplib.h
++++ b/libcpp/include/cpplib.h
+@@ -508,6 +508,9 @@
+   /* Nonzero means warn about use of C++ alternate operator names.  */
+   unsigned char warn_cxx_operator_names;
+ 
++  /* NeXT headers concatenate quoted path fragments in include directives.  */
++  unsigned char nextstep_include_concat;
++
+   /* True for traditional preprocessing.  */
+   unsigned char traditional;
+ 
+--- a/libcpp/files.cc
++++ b/libcpp/files.cc
+@@ -211,7 +211,7 @@
+ static int pchf_save_compare (const void *e1, const void *e2);
+ static int pchf_compare (const void *d_p, const void *e_p);
+ static bool check_file_against_entries (cpp_reader *, _cpp_file *, bool);
+-static void _cpp_post_stack_file (cpp_reader *, _cpp_file *, include_type, bool);
++static void _cpp_post_stack_file (cpp_reader *, _cpp_file *, include_type, unsigned int);
+ 
+ /* Given a filename in FILE->PATH, with the empty string interpreted
+    as <stdin>, open it.
+@@ -1038,7 +1038,7 @@
+ 
+ static void
+ _cpp_post_stack_file (cpp_reader *pfile, _cpp_file *file, include_type type,
+-		      bool sysp)
++                      unsigned int sysp)
+ {
+   /* In the case of a normal #include, we're now at the start of the
+      line *following* the #include.  A separate location_t for this
+--- a/gcc/c-family/c-target.def
++++ b/gcc/c-family/c-target.def
+@@ -113,4 +113,11 @@
+  bool, (const char*),
+  NULL)
+ 
++DEFHOOKPOD
++(cxx_system_headers_implicit_extern_c,
++ "When true, C++ declarations in non-C++-aware system headers have C linkage.\n\
++This supports legacy SDKs whose C headers do not provide extern C guards.\n\
++C++-aware include directories retain their normal C++ linkage.",
++ bool, false)
++
+ HOOK_VECTOR_END (C90_EMPTY_HACK)
+--- a/gcc/c-family/c-lex.cc
++++ b/gcc/c-family/c-lex.cc
+@@ -22,6 +22,7 @@
+ #include "coretypes.h"
+ #include "target.h"
+ #include "c-common.h"
++#include "c-target.h"
+ #include "timevar.h"
+ #include "stringpool.h"
+ #include "stor-layout.h"
+@@ -208,27 +209,27 @@
+ 
+ 	  input_location = new_map->start_location;
+ 	  (*debug_hooks->start_source_file) (line, LINEMAP_FILE (new_map));
+-#ifdef SYSTEM_IMPLICIT_EXTERN_C
+-	  if (c_header_level)
+-	    ++c_header_level;
+-	  else if (LINEMAP_SYSP (new_map) == 2)
+-	    {
+-	      c_header_level = 1;
+-	      ++pending_lang_change;
+-	    }
+-#endif
++          if (targetcm.cxx_system_headers_implicit_extern_c)
++            {
++              if (c_header_level)
++                ++c_header_level;
++              else if (LINEMAP_SYSP (new_map) == 2)
++                {
++                  c_header_level = 1;
++                  ++pending_lang_change;
++                }
++            }
+ 	}
+     }
+   else if (new_map->reason == LC_LEAVE)
+     {
+-#ifdef SYSTEM_IMPLICIT_EXTERN_C
+-      if (c_header_level && --c_header_level == 0)
+-	{
+-	  if (LINEMAP_SYSP (new_map) == 2)
+-	    warning (0, "badly nested C headers from preprocessor");
+-	  --pending_lang_change;
+-	}
+-#endif
++      if (targetcm.cxx_system_headers_implicit_extern_c
++          && c_header_level && --c_header_level == 0)
++        {
++          if (LINEMAP_SYSP (new_map) == 2)
++            warning (0, "badly nested C headers from preprocessor");
++          --pending_lang_change;
++        }
+       input_location = new_map->start_location;
+ 
+       (*debug_hooks->end_source_file) (LINEMAP_LINE (new_map));
+--- a/gcc/doc/tm.texi.in
++++ b/gcc/doc/tm.texi.in
+@@ -7722,11 +7722,7 @@
+ 
+ @hook TARGET_CXX_IMPLICIT_EXTERN_C
+ 
+-@defmac SYSTEM_IMPLICIT_EXTERN_C
+-Define this macro if the system header files do not support C++@.
+-This macro handles system header files by pretending that system
+-header files are enclosed in @samp{extern "C" @{@dots{}@}}.
+-@end defmac
++@hook TARGET_CXX_SYSTEM_HEADERS_IMPLICIT_EXTERN_C
+ 
+ @findex #pragma
+ @findex pragma
+--- a/gcc/doc/tm.texi
++++ b/gcc/doc/tm.texi
+@@ -12036,11 +12036,11 @@
+ is WinMain on Win32 targets.
+ @end deftypefn
+ 
+-@defmac SYSTEM_IMPLICIT_EXTERN_C
+-Define this macro if the system header files do not support C++@.
+-This macro handles system header files by pretending that system
+-header files are enclosed in @samp{extern "C" @{@dots{}@}}.
+-@end defmac
++@deftypevr {C Target Hook} bool TARGET_CXX_SYSTEM_HEADERS_IMPLICIT_EXTERN_C
++When true, C++ declarations in non-C++-aware system headers have C linkage.
++This supports legacy SDKs whose C headers do not provide extern C guards.
++C++-aware include directories retain their normal C++ linkage.
++@end deftypevr
+ 
+ @findex #pragma
+ @findex pragma

@@ -1,0 +1,104 @@
+{
+  "observations": [
+    {
+      "interfaces": [
+        "strcspn",
+        "qsort"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "working natively",
+      "evidence_tests": [
+        "string_strcspn",
+        "qsort"
+      ],
+      "note": "Selected upstream cases pass on every target; not exhaustive conformance."
+    },
+    {
+      "interfaces": [
+        "strstr"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "string_strstr"
+      ],
+      "note": "Empty needle returns NULL for both empty and nonempty haystacks; required result is the haystack pointer."
+    },
+    {
+      "interfaces": [
+        "strtol"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "strtol"
+      ],
+      "note": "Valid base-16 input 0xz consumes no character instead of consuming the initial zero. Classify this separately from the invalid-base host divergence. Native-only behavior is not executed by this mixed test."
+    },
+    {
+      "interfaces": [
+        "sscanf"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "sscanf"
+      ],
+      "note": "Valid percent-i integer conversions do not recognize octal/hexadecimal prefixes. Additional failures need individual reduction and standards review."
+    },
+    {
+      "interfaces": [
+        "fprintf",
+        "ungetc"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "ungetc"
+      ],
+      "note": "fprintf returns zero for a successful 13-byte write. A single ungetc after an unsuccessful scanset conversion fails; reduce the stream-state case before designing a fix."
+    },
+    {
+      "interfaces": [
+        "strtod",
+        "snprintf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "strtod_simple",
+        "snprintf"
+      ],
+      "note": "Selected upstream tests pass on all targets. The native floating test is blocked by its snprintf dependency."
+    }
+  ],
+  "next_batches": [
+    "Reduce proven string/numeric/stdio failures into independent cases before changing implementations.",
+    "Add a C-only string test selection so missing BSD strlcpy/strlcat cannot block C string coverage.",
+    "Prioritize self-contained missing string and integer APIs; inspect macro and existing BSD equivalents first.",
+    "Audit filesystem and time wrappers against actual kernel capabilities before promising POSIX semantics.",
+    "Extend the initial inventory with math, locale, header constants/types and omitted C/POSIX interfaces."
+  ],
+  "reviewed_guest_logs_sha256": {
+    "i386": "1f5118dbce9f02fe8cf160c2dab57001ced6c2d8979b51995cd117e30394bfeb",
+    "m68k": "ab71fc65bfd7cfab0bd8ebc799b4bb39efc73be15ced3dfa15d903d15647df08",
+    "sparc": "123ba96eb3050d15c2915373ec37ed8676147dd558305b5d3646d8e776f6a578",
+    "hppa": "35de2e4c4b91a943dbb9384b5883dac4d23ad3572b10c7f1aa2d7143bcdff4e8"
+  }
+}

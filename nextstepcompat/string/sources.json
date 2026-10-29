@@ -1,0 +1,18 @@
+{
+  "version": "1.2.6",
+  "url": "https://musl.libc.org/releases/musl-1.2.6.tar.gz",
+  "archive_sha256": "d585fd3b613c66151fc3249e8ed44f77020cb5e6c1e635a616d3f9f82460512a",
+  "files_sha256": {
+    "strstr.c": "11158e28318076b70bbaa40c04294b01d02cae475ff72385087c9b966aa14d44",
+    "COPYRIGHT": "b870108ec5e7790e9f9919064f1b9421d62d5f9b0e6c230c6adf7ea2da62e97b",
+    "strdup.c": "1d6181f9220e7189a48900e5f603f113e8e5c3cba2eeccbabf36cf9c4c54eeb1",
+    "strndup.c": "4f3cf1652551ceef6ba415b7123f9de4ef5e39d8a007b7e4262f92249161f77d",
+    "strnlen.c": "3a72ef5250b314ca0d8ff0fed2f6aa10c8b2b26605806c759faf0d1a9b835a9e",
+    "strtok_r.c": "5e0f79b18865f2b79cb4cf0b530d011adb21fb6a780ced952d8be11416d8e7a7",
+    "memcmp.c": "826b1b5e84d3c0fb68be827c051f6dc0d67da17ee3a444e94be0e5360586916f",
+    "strcmp.c": "3e1793ea2dd358e5c884c4dd232083605d0f6775f7ebe19d03d64fe97068a78f",
+    "strncmp.c": "df801c43304b27dcda67f219a7a3ca34a8fb06f4e63d21e8a6bcb36b03c3c012",
+    "explicit_bzero.c": "fbd2b46b1b8ca5ad1f47476741eb552beb8b12b9dff9ce2a773f747e1ea07189"
+  },
+  "license": "MIT; see COPYRIGHT"
+}

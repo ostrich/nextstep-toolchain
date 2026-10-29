@@ -1,0 +1,53 @@
+--- a/gcc/config/m68k/m68k.md
++++ b/gcc/config/m68k/m68k.md
+@@ -3347,7 +3347,17 @@
+ 	(mult:FP (match_operand:FP 1 "general_operand" "")
+ 		 (match_operand:FP 2 "general_operand" "")))]
+   "TARGET_HARD_FLOAT"
+-  "")
++{
++#ifdef NEXTSTEP_CLASSIC_RUNTIME
++  /* FSGLMUL rounds the significand before the final range conversion.
++     Keep the exact product of two float significands until that conversion. */
++  if (<MODE>mode == SFmode && TARGET_68881 && !flag_unsafe_math_optimizations)
++    {
++      m68k_expand_single_multiply (operands);
++      DONE;
++    }
++#endif
++})
+ 
+ (define_insn "mul<mode>3_floatsi_68881"
+   [(set (match_operand:FP 0 "nonimmediate_operand" "=f")
+--- a/gcc/config/m68k/m68k.cc
++++ b/gcc/config/m68k/m68k.cc
+@@ -7338,3 +7338,19 @@
+     }
+   emit_move_insn (operands[0], result);
+ }
++
++/* A float product has at most 48 significant bits, exactly representable in
++   extended precision.  FSGLMUL's 24-bit significand with extended exponent
++   range can double-round subnormal results.  Perform the range conversion
++   exactly once through an SF memory destination, also on 68881 machines. */
++void
++m68k_expand_single_multiply (rtx *operands)
++{
++  rtx left = force_reg (XFmode, convert_to_mode (XFmode, operands[1], 0));
++  rtx right = force_reg (XFmode, convert_to_mode (XFmode, operands[2], 0));
++  rtx product = gen_reg_rtx (XFmode);
++  rtx rounded = assign_stack_temp (SFmode, GET_MODE_SIZE (SFmode));
++  emit_insn (gen_mulxf3_68881 (product, left, right));
++  convert_move (rounded, product, 0);
++  emit_move_insn (operands[0], rounded);
++}
+--- a/gcc/config/m68k/m68k-protos.h
++++ b/gcc/config/m68k/m68k-protos.h
+@@ -21,6 +21,7 @@
+ 
+ #ifdef RTX_CODE
+ extern void m68k_expand_copysign (rtx *);
++extern void m68k_expand_single_multiply (rtx *);
+ extern enum m68k_function_kind m68k_get_function_kind (tree);
+ extern HOST_WIDE_INT m68k_initial_elimination_offset (int from, int to);
+ 

@@ -1,0 +1,14 @@
+--- a/misc/strip.c
++++ b/misc/strip.c
+@@ -4788,6 +4788,11 @@
+ 	    add_execute_list_with_prefix("ld");
+ 	add_execute_list("-keep_private_externs");
+ 	add_execute_list("-r");
++#ifdef NEXTSTEP_CCTOOLS
++	/* Match the canonical driver's legacy load-command policy. The
++	 * native archive indexer does not understand LC_UUID. */
++	add_execute_list("-no_uuid");
++#endif
+ 	if(Sflag)
+ 	    add_execute_list("-S");
+ 	if(xflag)

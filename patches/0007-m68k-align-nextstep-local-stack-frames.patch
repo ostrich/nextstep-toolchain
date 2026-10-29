@@ -1,0 +1,11 @@
+--- a/gcc/config/m68k/nextstep.h
++++ b/gcc/config/m68k/nextstep.h
+@@ -5,6 +5,8 @@
+ 
+ #undef STACK_BOUNDARY
+ #define STACK_BOUNDARY 32
++#undef PREFERRED_STACK_BOUNDARY
++#define PREFERRED_STACK_BOUNDARY 32
+ #undef STRUCTURE_SIZE_BOUNDARY
+ #define STRUCTURE_SIZE_BOUNDARY 16
+ #undef DEFAULT_PCC_STRUCT_RETURN

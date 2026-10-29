@@ -1,0 +1,63 @@
+--- a/gcc/config/m68k/m68k.cc
++++ b/gcc/config/m68k/m68k.cc
+@@ -7308,3 +7308,33 @@
+ }
+ 
+ #include "gt-m68k.h"
++
++/* Motorola FABS/FNEG propagate a NaN unchanged, including its sign.  They
++   cannot implement copysign's unconditional sign transfer.  Use the same
++   integer-word construction as optabs.cc:expand_copysign_bit instead.  */
++void
++m68k_expand_copysign (rtx *operands)
++{
++  machine_mode mode = GET_MODE (operands[0]);
++  unsigned int words = GET_MODE_SIZE (mode) / UNITS_PER_WORD;
++  rtx result = gen_reg_rtx (mode);
++  /* Read the sign before writing any part of the result.  All m68k formats
++     put the sign in bit 31 of the first stored word (XF has internal padding). */
++  rtx sign = operand_subword_force (operands[2], 0, mode);
++  sign = expand_binop (SImode, and_optab, sign, GEN_INT (-2147483648LL),
++                      NULL_RTX, 1, OPTAB_DIRECT);
++  for (unsigned int i = 0; i < words; ++i)
++    {
++      rtx value = operand_subword_force (operands[1], i, mode);
++      rtx dest = operand_subword (result, i, 1, mode);
++      if (i == 0)
++        {
++          value = expand_binop (SImode, and_optab, value, GEN_INT (2147483647),
++                                NULL_RTX, 1, OPTAB_DIRECT);
++          value = expand_binop (SImode, ior_optab, value, sign,
++                                NULL_RTX, 1, OPTAB_DIRECT);
++        }
++      emit_move_insn (dest, value);
++    }
++  emit_move_insn (operands[0], result);
++}
+--- a/gcc/config/m68k/m68k-protos.h
++++ b/gcc/config/m68k/m68k-protos.h
+@@ -20,6 +20,7 @@
+ /* Define functions defined in aux-output.c and used in templates.  */
+ 
+ #ifdef RTX_CODE
++extern void m68k_expand_copysign (rtx *);
+ extern enum m68k_function_kind m68k_get_function_kind (tree);
+ extern HOST_WIDE_INT m68k_initial_elimination_offset (int from, int to);
+ 
+--- a/gcc/config/m68k/m68k.md
++++ b/gcc/config/m68k/m68k.md
+@@ -6870,3 +6870,14 @@
+    (set (pc) (if_then_else (match_op_dup 1 [(subreg:HI (match_dup 0) 2) (const_int 0)])
+ 			   (match_dup 2) (match_dup 3)))]
+   "")
++
++;; FABS/FNEG preserve NaN signs on Motorola FPUs.  copysign must not.
++(define_expand "copysign<mode>3"
++  [(set (match_operand:FP 0 "register_operand")
++        (match_operand:FP 1 "general_operand"))
++   (use (match_operand:FP 2 "general_operand"))]
++  "TARGET_68881"
++{
++  m68k_expand_copysign (operands);
++  DONE;
++})

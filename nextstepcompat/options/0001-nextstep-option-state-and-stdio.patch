@@ -1,0 +1,29 @@
+--- a/getopt.c
++++ b/getopt.c
+@@ -4,11 +4,11 @@
+ #include <string.h>
+ #include <limits.h>
+ #include <stdlib.h>
+-#include "locale_impl.h"
+-#include "stdio_impl.h"
+ 
+-char *optarg;
+-int optind=1, opterr=1, optopt, __optpos, __optreset=0;
++#include "getopt-support.h"
++
++char *optarg = 0;
++int optind=1, opterr=1, optopt=0, __optpos=0, __optreset=0;
+ 
+ #define optpos __optpos
+ weak_alias(__optreset, optreset);
+--- a/getopt_long.c
++++ b/getopt_long.c
+@@ -5,7 +5,7 @@
+ #include <getopt.h>
+ #include <stdio.h>
+ #include <string.h>
+-#include "stdio_impl.h"
++#include "getopt-support.h"
+ 
+ extern int __optpos, __optreset;
+ 

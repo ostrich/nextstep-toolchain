@@ -1,0 +1,13 @@
+0001-i386-add-experimental-nextstep-c-target.patch
+0002-nextstep-restore-header-and-language-support.patch
+0003-nextstep-add-other-architectures.patch
+0004-nextstep-restore-sparc-and-hppa.patch
+0005-nextstep-add-cxx-runtime-support.patch
+0006-hppa-preserve-exact-ldil-constants.patch
+0007-m68k-align-nextstep-local-stack-frames.patch
+0008-nextstep-enable-dwarf-debugging.patch
+0009-nextstep-correct-i386-dwarf-register-map.patch
+0010-m68k-preserve-floating-point-mode-conversions.patch
+0011-nextstep-correct-call-lowering-and-driver-intermediates.patch
+0012-m68k-transfer-copysign-signs-with-integer-operations.patch
+0013-m68k-round-single-products-once-at-the-destination.patch

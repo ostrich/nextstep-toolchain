@@ -1,0 +1,797 @@
+diff --git a/as/as.c b/as/as.c
+index 6693047..6c8d761 100644
+--- a/as/as.c
++++ b/as/as.c
+@@ -824,7 +824,7 @@ unknown_flag:
+ 	if(flagseen['g'] == TRUE && flagseen['n'] == TRUE)
+ 	    as_fatal("-g can't be specified if -n is specified");
+ 
+-#if defined(I386) || defined(ARM)
++#if !defined(NEXTSTEP_CCTOOLS) && (defined(I386) || defined(ARM))
+ 	as_warn("%s: this system assembler is deprecated. Please migrate to "
+ 		"the clang integrated assembler (`as -q').", progname);
+ #endif
+diff --git a/as/input-scrub.c b/as/input-scrub.c
+index f8bd25c..452e34d 100644
+--- a/as/input-scrub.c
++++ b/as/input-scrub.c
+@@ -350,7 +350,8 @@ int *line)
+     char *p, *q;
+     static char directory_buf[MAXPATHLEN];
+ 
+-	getwd(directory_buf);
++	if (getcwd(directory_buf, sizeof(directory_buf)) == NULL)
++            directory_buf[0] = '\0';
+ 	*fileName = NULL;
+ 	*directory = directory_buf;
+ 	*line = 0;
+@@ -384,14 +385,7 @@ char *filename)
+   fprintf (stderr,"as:file(%s) %s! ",
+ 	   filename, gripe
+ 	   );
+-  if (errno > sys_nerr)
+-    {
+-      fprintf (stderr, "Unknown error #%d.", errno);
+-    }
+-  else
+-    {
+-      fprintf (stderr, "%s.", sys_errlist [errno]);
+-    }
++  fprintf (stderr, "%s.", strerror(errno));
+   (void)putc('\n', stderr);
+   errno = 0;			/* After reporting, clear it. */
+   if (input_file_is_open())	/* RMS says don't mention line # if not needed. */
+diff --git a/as/m68k.c b/as/m68k.c
+index 670b474..7bd3be6 100644
+--- a/as/m68k.c
++++ b/as/m68k.c
+@@ -188,7 +188,6 @@ const pseudo_typeS md_pseudo_table[] = {
+ 	{ "float",	float_cons,	'f'	},
+ 	{ "int",	cons,		4	},
+ 	{ "word",	cons,		2	},
+-	{ "quad",	big_cons,	8	},
+ 	{ "octa",	big_cons,	16	},
+ 	{ "even",	s_even,		0	},
+ 	{ "skip",	s_space,	0	},
+@@ -1625,6 +1624,28 @@ char *instring)
+ 					break;
+ 
+ 				/* We gotta put out some float */
++                /* The shared expression parser now keeps 64-bit integers in
++                   SEG_ABSOLUTE.  The old m68k parser classified values wider
++                   than 32 bits as bignums and used their raw IEEE bit pattern. */
++                if (seg(opP->con1) == SEG_ABSOLUTE &&
++                    (offs(opP->con1) > UINT32_MAX ||
++                     offs(opP->con1) < INT32_MIN)) {
++                    uint64_t bits = (uint64_t)offs(opP->con1);
++                    unsigned count = 4;
++                    while (count > 1 && (bits >> ((count - 1) * 16)) == 0)
++                        --count;
++                    if (count > (unsigned)baseo) {
++                        as_warn("Bignum too big for floating format; truncated");
++                        count = baseo;
++                    }
++                    baseo -= count;
++                    while (count) {
++                        --count;
++                        addword((bits >> (count * 16)) & 0xffff);
++                    }
++                    while (baseo--) addword(0);
++                    break;
++                }
+ 				if(seg(opP->con1)!=SEG_BIG) {
+ 					int_to_gen(nextword);
+ 					gen_to_words(words,baseo,(int32_t)outro);
+@@ -3482,7 +3503,11 @@ int nsect)
+ 	default:
+ 	    break;
+ 	}
+-	return(fragP->fr_var + fragP->fr_fix - old_fix);
++	/* layout.c can estimate the same chain again after relaxation.  Use
++         the current state length, including growth from earlier passes. */
++        return ((fragP->fr_type == rs_machine_dependent
++                 ? md_relax_table[fragP->fr_subtype].rlx_length : 0)
++                + fragP->fr_fix - old_fix);
+ }
+ 
+ /*
+diff --git a/as/read.c b/as/read.c
+index 70cc667..1aa15f3 100644
+--- a/as/read.c
++++ b/as/read.c
+@@ -484,6 +484,9 @@ static const pseudo_typeS pseudo_table[] = {
+   { "desc",	s_desc,		0	},
+   { "double",	float_cons,	'd'	},
+   { "appfile",	s_app_file,	0	},
++#ifdef M68K
++  { "file", s_app_file, 0 },
++#endif
+   { "fill",	s_fill,		0	},
+   { "globl",	s_globl,	0	},
+   { "lcomm",	s_lcomm,	0	},
+diff --git a/as/sparc.c b/as/sparc.c
+index 0d94c1e..e2d14a0 100644
+--- a/as/sparc.c
++++ b/as/sparc.c
+@@ -869,8 +869,12 @@ sparc_ip (str)
+ 		  case SPARC_RELOC_WDISP30:
+ 		    opcode |= (the_insn.exp.X_add_number >> 2) & 0x3fffffff;
+ 		    break;
++		  case SPARC_RELOC_13:
++		  case SPARC_RELOC_22:
++                    /* fix_new applies these ordinary immediate fields. */
++                    break;
+ 		  default:
+-		    printf("Unknown reloc entry\n");
++                    as_bad("unsupported absolute relocation");
+ 		  }
+ 		}
+ 
+diff --git a/include/stuff/macosx_deployment_target.h b/include/stuff/macosx_deployment_target.h
+index ed2c84e..cbc87d5 100644
+--- a/include/stuff/macosx_deployment_target.h
++++ b/include/stuff/macosx_deployment_target.h
+@@ -1,3 +1,5 @@
++#ifndef NEXTSTEP_DEPLOYMENT_TARGET_H
++#define NEXTSTEP_DEPLOYMENT_TARGET_H
+ /*
+  * Copyright (c) 2003 Apple Computer, Inc. All rights reserved.
+  *
+@@ -33,3 +35,5 @@ __private_extern__ void get_macosx_deployment_target(
+ 
+ __private_extern__ void put_macosx_deployment_target(
+     char *target);
++
++#endif
+diff --git a/ld/debugcompunit.c b/ld/debugcompunit.c
+index 6a294bf..055eee6 100644
+--- a/ld/debugcompunit.c
++++ b/ld/debugcompunit.c
+@@ -1,3 +1,4 @@
++#include "stuff/bool.h"
+ /*
+  * Copyright (c) 2006 Apple Computer, Inc.  All Rights Reserved.
+  *
+@@ -23,7 +24,7 @@
+ #ifndef KLD
+ #include <string.h>
+ #include <stdlib.h>
+-#include <stdbool.h>
++#include "stuff/bool.h"
+ #include "dwarf2.h"
+ #include "debugcompunit.h"
+ 
+@@ -80,9 +81,9 @@ read_uleb128 (const uint8_t ** offset, const uint8_t * end)
+ }
+ 
+ /* Skip over a DWARF attribute of form FORM.  */
+-static bool
++static enum bool
+ skip_form (const uint8_t ** offset, const uint8_t * end, uint64_t form,
+-	   uint8_t addr_size, bool dwarf64, bool little_endian)
++	   uint8_t addr_size, enum bool dwarf64, enum bool little_endian)
+ {
+   uint64_t sz;
+   
+@@ -94,13 +95,13 @@ skip_form (const uint8_t ** offset, const uint8_t * end, uint64_t form,
+       
+     case DW_FORM_block2:
+       if (end - *offset < 2)
+-	return false;
++	return FALSE;
+       sz = 2 + read_16 (*offset);
+       break;
+       
+     case DW_FORM_block4:
+       if (end - *offset < 4)
+-	return false;
++	return FALSE;
+       sz = 2 + read_32 (*offset);
+       break;
+       
+@@ -134,7 +135,7 @@ skip_form (const uint8_t ** offset, const uint8_t * end, uint64_t form,
+       
+     case DW_FORM_block1:
+       if (*offset == end)
+-	return false;
++	return FALSE;
+       sz = 1 + **offset;
+       break;
+       
+@@ -142,7 +143,7 @@ skip_form (const uint8_t ** offset, const uint8_t * end, uint64_t form,
+     case DW_FORM_udata:
+     case DW_FORM_ref_udata:
+       skip_leb128 (offset, end);
+-      return true;
++      return TRUE;
+       
+     case DW_FORM_strp:
+     case DW_FORM_ref_addr:
+@@ -150,12 +151,12 @@ skip_form (const uint8_t ** offset, const uint8_t * end, uint64_t form,
+       break;
+       
+     default:
+-      return false;
++      return FALSE;
+     }
+   if (end - *offset < sz)
+-    return false;
++    return FALSE;
+   *offset += sz;
+-  return true;
++  return TRUE;
+ }
+ 
+ /* Given pointers to the DEBUG_INFO and DEBUG_ABBREV sections, and
+@@ -187,7 +188,7 @@ read_comp_unit (const uint8_t * debug_info,
+   uint64_t abbrev_base;
+   uint64_t abbrev;
+   uint8_t address_size;
+-  bool dwarf64;
++  enum bool dwarf64;
+   
+   *name = NULL;
+   *comp_dir = NULL;
+@@ -195,7 +196,7 @@ read_comp_unit (const uint8_t * debug_info,
+ 
+   if (debug_info_size < 12)
+     /* Too small to be a real debug_info section.  */
+-    return false;
++    return FALSE;
+   sz = read_32 (di);
+   di += 4;
+   dwarf64 = sz == 0xffffffff;
+@@ -203,17 +204,17 @@ read_comp_unit (const uint8_t * debug_info,
+     sz = read_64 (di), di += 8;
+   else if (sz > 0xffffff00)
+     /* Unknown dwarf format.  */
+-    return false;
++    return FALSE;
+   
+   /* Verify claimed size.  */
+   if (sz + (di - debug_info) > debug_info_size || sz <= (dwarf64 ? 23 : 11))
+-    return false;
++    return FALSE;
+ 
+   vers = read_16 (di);
+   if (vers < 2 || vers > 3)
+     /* DWARF version wrong for this code.
+        Chances are we could continue anyway, but we don't know for sure.  */
+-    return false;
++    return FALSE;
+   di += 2;
+   
+   /* Find the debug_abbrev section.  */
+@@ -221,7 +222,7 @@ read_comp_unit (const uint8_t * debug_info,
+   di += dwarf64 ? 8 : 4;
+   
+   if (abbrev_base > debug_abbrev_size)
+-    return false;
++    return FALSE;
+   da = debug_abbrev + abbrev_base;
+   enda = debug_abbrev + debug_abbrev_size;
+ 
+@@ -231,7 +232,7 @@ read_comp_unit (const uint8_t * debug_info,
+   end = di + sz;
+   abbrev = read_uleb128 (&di, end);
+   if (abbrev == (uint64_t) -1)
+-    return false;
++    return FALSE;
+   
+   /* Skip through the debug_abbrev section looking for that abbrev.  */
+   for (;;)
+@@ -244,7 +245,7 @@ read_comp_unit (const uint8_t * debug_info,
+ 	break;
+       skip_leb128 (&da, enda); /* Skip the tag.  */
+       if (da == enda)
+-	return false;
++	return FALSE;
+       da++;  /* Skip the DW_CHILDREN_* value.  */
+       
+       do {
+@@ -252,14 +253,14 @@ read_comp_unit (const uint8_t * debug_info,
+ 	skip_leb128 (&da, enda);
+       } while (attr != 0 && attr != (uint64_t) -1);
+       if (attr != 0)
+-	return false;
++	return FALSE;
+     }
+ 
+   /* Check that the abbrev is one for a DW_TAG_compile_unit.  */
+   if (read_uleb128 (&da, enda) != DW_TAG_compile_unit)
+-    return false;
++    return FALSE;
+   if (da == enda)
+-    return false;
++    return FALSE;
+   da++;  /* Skip the DW_CHILDREN_* value.  */
+ 
+   /* Now, go through the DIE looking for DW_AT_name,
+@@ -270,9 +271,9 @@ read_comp_unit (const uint8_t * debug_info,
+       uint64_t form = read_uleb128 (&da, enda);
+ 
+       if (attr == (uint64_t) -1)
+-	return false;
++	return FALSE;
+       else if (attr == 0)
+-	return true;
++	return TRUE;
+ 
+       if (form == DW_FORM_indirect)
+ 	form = read_uleb128 (&di, end);
+@@ -289,7 +290,7 @@ read_comp_unit (const uint8_t * debug_info,
+       else if (attr == DW_AT_stmt_list && form == DW_FORM_data8)
+ 	*stmt_list = read_64 (di);
+       if (! skip_form (&di, end, form, address_size, dwarf64, little_endian))
+-	return false;
++	return FALSE;
+     }
+ }
+ #endif /* ! KLD */
+diff --git a/ld/debugline.c b/ld/debugline.c
+index 8b5e274..fb9a02d 100644
+--- a/ld/debugline.c
++++ b/ld/debugline.c
+@@ -23,13 +23,13 @@
+ #ifndef KLD
+ #include <string.h>
+ #include <stdlib.h>
+-#include <stdbool.h>
++#include "stuff/bool.h"
+ #include "dwarf2.h"
+ #include "debugline.h"
+ 
+ struct line_reader_data 
+ {
+-  bool little_endian;
++  enum bool little_endian;
+   
+   /* From the line number information header.  */
+   uint8_t minimum_instruction_length;
+@@ -184,7 +184,7 @@ init_state (struct line_info *s)
+   s->line = 1;
+   s->col = 0;
+   s->pc = 0;
+-  s->end_of_sequence = false;
++  s->end_of_sequence = FALSE;
+ }
+ 
+ /* Read a debug_line section.  */
+@@ -194,7 +194,7 @@ line_open (const uint8_t * debug_line, size_t debug_line_size,
+ 	   int little_endian)
+ {
+   struct line_reader_data * lnd = NULL;
+-  bool dwarf_size_64;
++  enum bool dwarf_size_64;
+ 
+   uint64_t lnd_length, header_length;
+   const uint8_t * table_start;
+@@ -215,13 +215,13 @@ line_open (const uint8_t * debug_line, size_t debug_line_size,
+     {
+       lnd_length = read_64 (lnd->cpos);
+       lnd->cpos += 8;
+-      dwarf_size_64 = true;
++      dwarf_size_64 = TRUE;
+     }
+   else if (lnd_length > 0xfffffff0)
+     /* Not a format we understand.  */
+     goto error;
+   else
+-    dwarf_size_64 = false;
++    dwarf_size_64 = FALSE;
+ 
+   if (debug_line_size < lnd_length + (dwarf_size_64 ? 12 : 4)
+       || lnd_length < (dwarf_size_64 ? 15 : 11))
+@@ -342,7 +342,7 @@ line_at_eof (struct line_reader_data * lnd)
+   return lnd->cpos == lnd->end;
+ }
+ 
+-static bool
++static enum bool
+ next_state (struct line_reader_data *lnd)
+ {
+   if (lnd->cur.end_of_sequence)
+@@ -354,7 +354,7 @@ next_state (struct line_reader_data *lnd)
+       uint64_t tmp;
+       
+       if (lnd->cpos == lnd->end)
+-	return false;
++	return FALSE;
+       op = *lnd->cpos++;
+       if (op >= lnd->opcode_base)
+ 	{
+@@ -363,7 +363,7 @@ next_state (struct line_reader_data *lnd)
+ 	  lnd->cur.line += op % lnd->line_range + lnd->line_base;
+ 	  lnd->cur.pc += (op / lnd->line_range 
+ 			  * lnd->minimum_instruction_length);
+-	  return true;
++	  return TRUE;
+ 	}
+       else switch (op)
+ 	{
+@@ -373,13 +373,13 @@ next_state (struct line_reader_data *lnd)
+ 	    const uint8_t * op = lnd->cpos;
+ 	    
+ 	    if (lnd->end - op < sz || sz == 0)
+-	      return false;
++	      return FALSE;
+ 	    lnd->cpos += sz;
+ 	    switch (*op++)
+ 	      {
+ 	      case DW_LNE_end_sequence:
+-		lnd->cur.end_of_sequence = true;
+-		return true;
++		lnd->cur.end_of_sequence = TRUE;
++		return TRUE;
+ 		
+ 	      case DW_LNE_set_address:
+ 		if (sz == 9)
+@@ -387,7 +387,7 @@ next_state (struct line_reader_data *lnd)
+ 		else if (sz == 5)
+ 		  lnd->cur.pc = read_32 (op);
+ 		else
+-		  return false;
++		  return FALSE;
+ 		break;
+ 		
+ 	      case DW_LNE_define_file:
+@@ -397,10 +397,10 @@ next_state (struct line_reader_data *lnd)
+ 		    (lnd->filenames, 
+ 		     (lnd->numfile + 1) * sizeof (const uint8_t *));
+ 		  if (! filenames)
+-		    return false;
++		    return FALSE;
+ 		  /* Check for zero-termination.  */
+ 		  if (! memchr (op, 0, lnd->cpos - op))
+-		    return false;
++		    return FALSE;
+ 		  filenames[lnd->numfile++] = op;
+ 		  lnd->filenames = filenames;
+ 
+@@ -417,11 +417,11 @@ next_state (struct line_reader_data *lnd)
+ 	  }
+ 	  
+ 	case DW_LNS_copy:
+-	  return true;
++	  return TRUE;
+ 	case DW_LNS_advance_pc:
+ 	  tmp = read_uleb128 (lnd);
+ 	  if (tmp == (uint64_t) -1)
+-	    return false;
++	    return FALSE;
+ 	  lnd->cur.pc += tmp * lnd->minimum_instruction_length;
+ 	  break;
+ 	case DW_LNS_advance_line:
+@@ -439,7 +439,7 @@ next_state (struct line_reader_data *lnd)
+ 	  break;
+ 	case DW_LNS_fixed_advance_pc:
+ 	  if (lnd->end - lnd->cpos < 2)
+-	    return false;
++	    return FALSE;
+ 	  lnd->cur.pc += read_16 (lnd->cpos);
+ 	  lnd->cpos += 2;
+ 	  break;
+@@ -469,7 +469,7 @@ line_next (struct line_reader_data * lnd,
+       struct line_info prev = lnd->cur;
+ 
+       if (! next_state (lnd))
+-	return false;
++	return FALSE;
+ 
+       if (lnd->cur.end_of_sequence)
+ 	break;
+@@ -487,16 +487,16 @@ line_next (struct line_reader_data * lnd,
+ 	break;
+     }
+   *result = lnd->cur;
+-  return true;
++  return TRUE;
+ }
+ 
+ /* Find the region (START->pc through END->pc) in the debug_line
+    information which contains PC.  This routine starts searching at
+    the current position (which is returned as END), and will go all
+-   the way around the debug_line information.  It will return false if
++   the way around the debug_line information.  It will return FALSE if
+    an error occurs or if there is no matching region; these may be
+    distinguished by looking at START->end_of_sequence, which will be
+-   false on error and true if there was no matching region.
++   FALSE on error and TRUE if there was no matching region.
+    You could write this routine using line_next, but this version
+    will be slightly more efficient, and of course more convenient.  */
+ 
+@@ -518,20 +518,20 @@ line_find_addr (struct line_reader_data * lnd,
+     prev = lnd->cur;
+     if (! next_state (lnd))
+       {
+-	start->end_of_sequence = false;
+-	return false;
++	start->end_of_sequence = FALSE;
++	return FALSE;
+       }
+     if (lnd->cur.end_of_sequence && lnd->cpos == lnd->end)
+       line_reset (lnd);
+     if (lnd->cpos == startpos)
+       {
+-	start->end_of_sequence = true;
+-	return false;
++	start->end_of_sequence = TRUE;
++	return FALSE;
+       }
+   } while (lnd->cur.pc <= pc || prev.pc > pc || prev.end_of_sequence);
+   *start = prev;
+   *end = lnd->cur;
+-  return true;
++  return TRUE;
+ }
+ #endif /* ! KLD */
+ 
+diff --git a/ld/layout.c b/ld/layout.c
+index 83f4962..b6beeb4 100644
+--- a/ld/layout.c
++++ b/ld/layout.c
+@@ -205,10 +205,10 @@ layout(void)
+ 	memset(&powerpc,     '\0', sizeof(ppc_thread_state_t));
+ 	memset(&mc88000, '\0', sizeof(m88k_thread_state_grf_t));
+ 	memset(&intel386,'\0', sizeof(i386_thread_state_t));
+-	intel386.es = USER_DATA_SELECTOR;
+-	intel386.ds = USER_DATA_SELECTOR;
+-	intel386.ss = USER_DATA_SELECTOR;
+-	intel386.cs = USER_CODE_SELECTOR;
++	intel386.es = 0x17;
++	intel386.ds = 0x17;
++	intel386.ss = 0x17;
++	intel386.cs = 0x0f;
+ 	memset(&hppa_frame_state, '\0',
+ 		sizeof(struct hp_pa_frame_thread_state));
+ 	memset(&hppa_integer_state, '\0',
+@@ -1242,14 +1242,14 @@ layout_segments(void)
+ 					  I860_THREAD_STATE_REGS_COUNT;
+ 	    }
+ 	    else if(arch_flag.cputype == CPU_TYPE_I386){
+-		output_thread_info.flavor = i386_THREAD_STATE;
++		output_thread_info.flavor = -1; /* NEXTSTEP i386 thread state. */
+ 		output_thread_info.count = i386_THREAD_STATE_COUNT;
+ 		output_thread_info.entry_point = (int *)&(intel386.eip);
+ 		output_thread_info.stack_pointer = (int *)&(intel386.esp);
+-		intel386.es = USER_DATA_SELECTOR;
+-		intel386.ds = USER_DATA_SELECTOR;
+-		intel386.ss = USER_DATA_SELECTOR;
+-		intel386.cs = USER_CODE_SELECTOR;
++		intel386.es = 0x17;
++		intel386.ds = 0x17;
++		intel386.ss = 0x17;
++		intel386.cs = 0x0f;
+ 		output_thread_info.state = &intel386;
+ 		output_thread_info.thread_command.cmdsize += sizeof(long) *
+ 					    i386_THREAD_STATE_COUNT;
+diff --git a/ld/pass1.c b/ld/pass1.c
+index 408f766..b488010 100644
+--- a/ld/pass1.c
++++ b/ld/pass1.c
+@@ -135,6 +135,7 @@ __private_extern__ struct merged_segment *base_obj_segments = NULL;
+  * The stat buffer for input files.  This is needed both by pass1() and
+  * pass1_archive() to check the times.
+  */
++__private_extern__ enum byte_sex ld_get_toc_byte_sex(char *, uint32_t);
+ static struct stat stat_buf = { 0 };
+ 
+ /*
+@@ -1322,7 +1323,7 @@ down:
+ 		  file_name);
+ 	    return;
+ 	}
+-	toc_byte_sex = get_toc_byte_sex(file_addr, file_size);
++	toc_byte_sex = ld_get_toc_byte_sex(file_addr, file_size);
+ 	nranlibs = *((long *)(file_addr + offset));
+ 	if(toc_byte_sex != host_byte_sex)
+ 	    nranlibs = SWAP_LONG(nranlibs);
+@@ -1753,14 +1754,14 @@ down:
+ }
+ 
+ /*
+- * get_toc_byte_sex() guesses the byte sex of the table of contents of the
++ * ld_get_toc_byte_sex() guesses the byte sex of the table of contents of the
+  * library mapped in at the address, addr, of size, size based on the first
+  * object file's bytesex.  If it can't figure it out, because the library has
+  * no object file members or is malformed it will return UNKNOWN_BYTE_SEX.
+  */
+ __private_extern__
+ enum byte_sex
+-get_toc_byte_sex(
++ld_get_toc_byte_sex(
+ char *addr,
+ uint32_t size)
+ {
+@@ -5978,7 +5979,7 @@ char *filename)
+  * symbols and if found sets *(int *)fail_p.
+  */
+ static int
+-symbol_address_compare (void *fail_p, const void *a_p, const void *b_p)
++symbol_address_compare (const void *a_p, const void *b_p, void *fail_p)
+ {
+   const struct nlist * const * aa = a_p;
+   const struct nlist * a = *aa;
+@@ -6129,8 +6130,8 @@ read_dwarf_info(void)
+   sst = allocate (sizeof (struct nlist *) * cur_obj->symtab->nsyms);
+   for (i = 0; i < cur_obj->symtab->nsyms; i++)
+     sst[i] = st + i;
+-  qsort_r (sst, cur_obj->symtab->nsyms, sizeof (struct nlist *), &has_stabs,
+-	   symbol_address_compare);
++  qsort_r (sst, cur_obj->symtab->nsyms, sizeof (struct nlist *),
++           symbol_address_compare, &has_stabs);
+   if (has_stabs) {
+     error_with_cur_obj("has both STABS and DWARF debugging info");
+     free (sst);
+diff --git a/ld/pass1.h b/ld/pass1.h
+index 8773a77..c2a006e 100644
+--- a/ld/pass1.h
++++ b/ld/pass1.h
+@@ -48,7 +48,7 @@ __private_extern__ char **ld_library_paths;
+ __private_extern__ unsigned long nld_library_paths;
+ 
+ /* the standard directories to search for -lx filenames */
+-__private_extern__ char *standard_dirs[];
++__private_extern__ extern char *standard_dirs[];
+ 
+ /*
+  * The user specified directories to search for "-framework Foo" names, and the
+@@ -58,7 +58,7 @@ __private_extern__ char **framework_dirs;
+ __private_extern__ unsigned long nframework_dirs;
+ 
+ /* the standard framework directories to search for "-framework Foo" names */
+-__private_extern__ char *standard_framework_dirs[];
++__private_extern__ extern char *standard_framework_dirs[];
+ 
+ /* the pointer to the head of the base object file's segments */
+ __private_extern__ struct merged_segment *base_obj_segments;
+diff --git a/ld/symbols.c b/ld/symbols.c
+index 7981e95..71ab5bc 100644
+--- a/ld/symbols.c
++++ b/ld/symbols.c
+@@ -4568,8 +4568,8 @@ mark_globals_live(void)
+ 		    if(only_referenced_dynamically == TRUE)
+ 			continue;
+ 		}
+-#ifdef DEBUG
+ mark_it_live:
++#ifdef DEBUG
+ 		if(((debug & (1 << 25)) || (debug & (1 << 26)))){
+ 		    print("** In mark_globals_live() ");
+ 		    if(merged_symbol->nlist.n_desc & N_NO_DEAD_STRIP)
+diff --git a/libstuff/arch.c b/libstuff/arch.c
+index 48cce4c..d5060ab 100644
+--- a/libstuff/arch.c
++++ b/libstuff/arch.c
+@@ -136,7 +136,7 @@ static const struct cpu_entry cpu_entries[] = {
+     
+     /* desktop */
+     { CPU_TYPE_X86_64,	    LITTLE_ENDIAN_BYTE_SEX, 0x7fff5fc00000LL,  0x1000 },
+-    { CPU_TYPE_I386,	    LITTLE_ENDIAN_BYTE_SEX, 0xc0000000,        0x1000 },
++    { CPU_TYPE_I386,	    LITTLE_ENDIAN_BYTE_SEX, 0xc0000000,        0x2000 },
+     { CPU_TYPE_POWERPC,	    BIG_ENDIAN_BYTE_SEX,    0xc0000000,	       0x1000 },
+     { CPU_TYPE_POWERPC64,   BIG_ENDIAN_BYTE_SEX,    0x7ffff00000000LL, 0x1000 },
+     { CPU_TYPE_VEO,	    BIG_ENDIAN_BYTE_SEX,    0xc0000000,	       0x1000 },
+diff --git a/libstuff/diagnostics.c b/libstuff/diagnostics.c
+index 9c421af..2855e53 100644
+--- a/libstuff/diagnostics.c
++++ b/libstuff/diagnostics.c
+@@ -30,7 +30,7 @@
+  *  rdar://64357409 and the clang's lib/Frontend/LogDiagnosticPrinter.cpp.
+  */
+ 
+-#include "diagnostics.h"
++#include "stuff/diagnostics.h"
+ 
+ #include "stuff/errors.h"
+ 
+diff --git a/libstuff/macosx_deployment_target.c b/libstuff/macosx_deployment_target.c
+index 14eca82..7db2871 100644
+--- a/libstuff/macosx_deployment_target.c
++++ b/libstuff/macosx_deployment_target.c
+@@ -26,7 +26,9 @@
+ #include <string.h>
+ #include <mach/mach.h>
+ #include <sys/types.h>
++#ifdef __APPLE__ /* cctools-port */
+ #include <sys/sysctl.h>
++#endif
+ #include "stuff/errors.h"
+ #include "stuff/allocate.h"
+ #include "stuff/macosx_deployment_target.h"
+@@ -112,11 +114,15 @@ use_default:
+ 	/*
+ 	 * The default value is the version of the running OS.
+ 	 */
++#ifdef __APPLE__
+ 	osversion_name[0] = CTL_KERN;
+ 	osversion_name[1] = KERN_OSRELEASE;
+ 	osversion_len = sizeof(osversion) - 1;
+ 	if(sysctl(osversion_name, 2, osversion, &osversion_len, NULL, 0) == -1)
+ 	    system_error("sysctl for kern.osversion failed");
++#else
++	strcpy(osversion, "9.0.0"); /* Deterministic foreign-host default. */
++#endif
+ 
+ 	/*
+ 	 * Now parse this out.  It is expected to be of the form "x.y.z" where
+diff --git a/misc/libtool.c b/misc/libtool.c
+index 289ec4d..157d391 100644
+--- a/misc/libtool.c
++++ b/misc/libtool.c
+@@ -1,3 +1,4 @@
++#include <sys/file.h>
+ /*
+  * Copyright (c) 1999-2003 Apple Computer, Inc.  All Rights Reserved.
+  *
+@@ -3126,13 +3127,13 @@ struct ofile *ofile)
+ #ifndef __OPENSTEP__
+ 	if (__builtin_available(macOS 10.12, *)) {
+ 	    struct timespec times[2];
+-	    memcpy(&times[0], &stat_buf.st_atimespec, sizeof(struct timespec));
+-	    memcpy(&times[1], &stat_buf.st_mtimespec, sizeof(struct timespec));
++	    memcpy(&times[0], &stat_buf.st_atim, sizeof(struct timespec));
++	    memcpy(&times[1], &stat_buf.st_mtim, sizeof(struct timespec));
+ 	    time_result = utimensat(AT_FDCWD, tempfile, times, 0);
+ 	}
+ 	else {
+-	    TIMESPEC_TO_TIMEVAL(&timep[0], &stat_buf.st_atimespec);
+-	    TIMESPEC_TO_TIMEVAL(&timep[1], &stat_buf.st_mtimespec);
++	    TIMESPEC_TO_TIMEVAL(&timep[0], &stat_buf.st_atim);
++	    TIMESPEC_TO_TIMEVAL(&timep[1], &stat_buf.st_mtim);
+ 	    time_result = utimes(tempfile, timep);
+ 	}
+ #else
+@@ -4693,7 +4694,11 @@ static void ld_trace_close(void)
+     if (trace_buffer) {
+         if (cmd_flags.trace_file_path != NULL) {
+             trace_file = open(cmd_flags.trace_file_path,
+-                              O_WRONLY | O_APPEND | O_CREAT | O_EXLOCK, 0666);
++                              O_WRONLY | O_APPEND | O_CREAT, 0666);
++            if (trace_file != -1 && flock(trace_file, LOCK_EX) == -1) {
++                close(trace_file);
++                trace_file = -1;
++            }
+             if (trace_file == -1)
+                 error("Could not open or create trace file: %s\n",
+                       cmd_flags.trace_file_path);
+diff --git a/misc/lipo.c b/misc/lipo.c
+index 04a3eca..0c1ede1 100644
+--- a/misc/lipo.c
++++ b/misc/lipo.c
+@@ -1142,15 +1142,15 @@ struct input_file *input)
+ 	 */
+ 	if (__builtin_available(macOS 10.12, *)) {
+ 	    if (output_times[1].tv_sec == 0) {
+-		memcpy(&output_times[0], &stat_buf.st_atimespec,
++		memcpy(&output_times[0], &stat_buf.st_atim,
+ 		       sizeof(struct timespec));
+-		memcpy(&output_times[1], &stat_buf.st_mtimespec,
++		memcpy(&output_times[1], &stat_buf.st_mtim,
+ 		       sizeof(struct timespec));
+ 	    }
+ 	} else {
+ 	    if (output_timev[1].tv_sec == 0) {
+-		TIMESPEC_TO_TIMEVAL(&output_timev[0], &stat_buf.st_atimespec);
+-		TIMESPEC_TO_TIMEVAL(&output_timev[1], &stat_buf.st_mtimespec);
++		TIMESPEC_TO_TIMEVAL(&output_timev[0], &stat_buf.st_atim);
++		TIMESPEC_TO_TIMEVAL(&output_timev[1], &stat_buf.st_mtim);
+ 	    }
+ 	}
+ #else
+diff --git a/misc/nm.c b/misc/nm.c
+index af68432..2aee520 100644
+--- a/misc/nm.c
++++ b/misc/nm.c
+@@ -561,8 +561,11 @@ void *cookie)
+ 	process_flags.nlibs = 0;
+ 	process_flags.lib_names = NULL;
+ 
++
++#ifdef LTO_SUPPORT
+ 	llvm_bundle_pointer = NULL;
+ 	llvm_bundle_size = 0;
++#endif
+ 
+ 	if(ofile->mh == NULL && ofile->mh64 == NULL){
+ #ifdef LTO_SUPPORT

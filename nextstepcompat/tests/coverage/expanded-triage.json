@@ -1,0 +1,421 @@
+{
+  "observations": [
+    {
+      "interfaces": [
+        "strcspn",
+        "qsort"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "working natively",
+      "evidence_tests": [
+        "string_strcspn",
+        "qsort"
+      ],
+      "note": "Selected upstream cases pass on every target; not exhaustive conformance."
+    },
+    {
+      "interfaces": [
+        "strtol"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "The native-only reduced control fails valid prefix/range/end-pointer cases. The invalid-base host divergence remains a separate policy issue."
+    },
+    {
+      "interfaces": [
+        "sscanf"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "Valid percent-i integer conversions do not recognize octal/hexadecimal prefixes. Additional failures need individual reduction and standards review."
+    },
+    {
+      "interfaces": [
+        "fprintf",
+        "ungetc"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "The reduced native controls fail successful-write character counts and pushback/EOF cases; the compatibility adapters pass those cases."
+    },
+    {
+      "interfaces": [
+        "strstr"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "string_strstr"
+      ],
+      "note": "Pinned musl search passes the upstream cases, including empty needles."
+    },
+    {
+      "interfaces": [
+        "strtol",
+        "strtoul"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "strtol"
+      ],
+      "note": "Checked adapters pass upstream and reduced prefix, sign, range and end-pointer cases."
+    },
+    {
+      "interfaces": [
+        "sscanf",
+        "vsscanf",
+        "fscanf",
+        "vfscanf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "sscanf",
+        "ungetc"
+      ],
+      "note": "Pinned musl scanner passes string and native-stream input cases; va_list implementations are exercised through the variadic entry points."
+    },
+    {
+      "interfaces": [
+        "printf",
+        "fprintf",
+        "vfprintf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "regressions"
+      ],
+      "note": "Stream formatting and character counts pass; output errors set the native error indicator. The shared va_list implementation is exercised."
+    },
+    {
+      "interfaces": [
+        "ungetc"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "regressions",
+        "ungetc"
+      ],
+      "note": "Pushback passes all 256 byte values after repeated EOF, beginning-of-buffer lookahead and caller-owned buffer boundaries."
+    },
+    {
+      "interfaces": [
+        "strtod",
+        "snprintf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "strtod_simple",
+        "snprintf"
+      ],
+      "note": "Selected upstream conversion and bounded-format tests pass."
+    },
+    {
+      "interfaces": [
+        "strcpy",
+        "strncpy",
+        "strncat",
+        "strchr",
+        "strrchr",
+        "strspn",
+        "strcspn",
+        "strpbrk",
+        "strtok"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "working natively",
+      "evidence_tests": [
+        "string_iso"
+      ],
+      "note": "The unchanged C assertions pass independently of the omitted BSD extension block."
+    },
+    {
+      "interfaces": [
+        "memcpy",
+        "memmove",
+        "memset",
+        "memchr",
+        "strlen",
+        "strcat"
+      ],
+      "modes": [
+        "native",
+        "compat"
+      ],
+      "classification": "working natively",
+      "evidence_tests": [
+        "memory_boundaries"
+      ],
+      "note": "Selected zero-length, alignment, overlap, bounds and byte-value cases pass; this is not exhaustive conformance."
+    },
+    {
+      "interfaces": [
+        "memcmp",
+        "strcmp",
+        "strncmp"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "memory_boundaries"
+      ],
+      "note": "Namespaced musl comparisons pass unsigned high-byte ordering and memory/string boundaries."
+    },
+    {
+      "interfaces": [
+        "strcmp",
+        "strncmp"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "memory_boundaries"
+      ],
+      "note": "Native comparisons order byte 0x80 before 0x7f; ISO C requires unsigned-byte ordering.",
+      "arches": [
+        "i386",
+        "m68k",
+        "sparc"
+      ]
+    },
+    {
+      "interfaces": [
+        "memcmp"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "memory_boundaries"
+      ],
+      "note": "The native byte comparison fails unsigned 0x80/0x7f ordering.",
+      "arches": [
+        "m68k",
+        "sparc"
+      ]
+    },
+    {
+      "interfaces": [
+        "memcmp"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "working natively",
+      "evidence_tests": [
+        "memory_boundaries"
+      ],
+      "note": "Selected unsigned byte ordering case passes.",
+      "arches": [
+        "i386",
+        "hppa"
+      ]
+    },
+    {
+      "interfaces": [
+        "strcmp",
+        "strncmp"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "working natively",
+      "evidence_tests": [
+        "memory_boundaries"
+      ],
+      "note": "Selected unsigned byte ordering cases pass.",
+      "arches": [
+        "hppa"
+      ]
+    },
+    {
+      "interfaces": [
+        "strdup",
+        "strndup",
+        "strnlen",
+        "strtok_r"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "portable_apis",
+        "allocation-faults"
+      ],
+      "note": "Pinned musl additions pass ownership, bounds and independent tokenizer-state cases. Injected allocation failures set ENOMEM through the NeXT allocator bridge."
+    },
+    {
+      "interfaces": [
+        "getline",
+        "getdelim"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "portable_apis",
+        "line-faults"
+      ],
+      "note": "Native-stream line input passes embedded NUL, growth, delimiter, EOF, argument/read errors and injected allocation-failure checks."
+    },
+    {
+      "interfaces": [
+        "strtoimax",
+        "strtoumax",
+        "imaxabs",
+        "imaxdiv"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "portable_apis"
+      ],
+      "note": "Maximum-width conversions, range errors, quotient/remainder and j-format round trips pass on the four ILP32 targets."
+    },
+    {
+      "interfaces": [
+        "setenv",
+        "unsetenv"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "environment_time"
+      ],
+      "note": "Copied values, overwrite policy, repeated replacement, duplicate removal, invalid names and externally replaced environ are tested."
+    },
+    {
+      "interfaces": [
+        "strftime"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "time_calendar"
+      ],
+      "note": "The native C90 week-number cases and modern calendar conversions fail independent 400-year expectations."
+    },
+    {
+      "interfaces": [
+        "strftime"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "strftime",
+        "time_calendar",
+        "environment_time"
+      ],
+      "note": "Musl C-locale formatting passes unchanged upstream cases and independent 400-year expectations. Other locales retain the native implementation; native time_t is unchanged."
+    },
+    {
+      "interfaces": [
+        "fwrite"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "stdio_boundaries"
+      ],
+      "note": "Native line-buffered update-stream writes can return success without setting output mode, causing fflush to discard the output; read-only writes can omit the error indicator."
+    },
+    {
+      "interfaces": [
+        "fwrite",
+        "printf",
+        "fprintf",
+        "vfprintf",
+        "scanf",
+        "vscanf",
+        "fscanf",
+        "vfscanf"
+      ],
+      "modes": [
+        "compat"
+      ],
+      "classification": "working with compatibility",
+      "evidence_tests": [
+        "stdio_boundaries"
+      ],
+      "note": "Native FILE bridges pass full/line/unbuffered cases, seek/update transitions, output after EOF, direct element counts, stdin scanf/vscanf and write errors."
+    },
+    {
+      "interfaces": [
+        "strstr"
+      ],
+      "modes": [
+        "native"
+      ],
+      "classification": "broken",
+      "evidence_tests": [
+        "string_strstr"
+      ],
+      "note": "Native empty-needle searches fail the unchanged upstream cases on all four targets."
+    }
+  ],
+  "reviewed_guest_logs_sha256": {
+    "i386": "2404d07652662927dd232de353bfe03e653aac74e61706a1112f9c58decbb40f",
+    "m68k": "81eb712cd59bc3dc2390734352a64d942b3031f0c4926615222c3a5c2b52445d",
+    "sparc": "079a4f818c1885207307699e524c26ad2f3cf8aaa745744f584cb2ea8bf1439c",
+    "hppa": "e008cf1d9a7dd56ef767b904499de771c5d445e63fff624499386f901efbead4"
+  },
+  "next_batches": [
+    "Review remaining missing interfaces against real application needs and native equivalents.",
+    "Expand filesystem, math and locale behavioral coverage independently; do not infer support from link availability.",
+    "Keep Unicode locales, wide stream I/O and kernel epoch-width changes outside the current single-byte library contract."
+  ]
+}

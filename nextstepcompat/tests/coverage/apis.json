@@ -1,0 +1,1031 @@
+{
+  "scope": "Initial C library and selected POSIX inventory; deliberately not exhaustive.",
+  "interfaces": [
+    {
+      "name": "memcpy",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "memmove",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "memset",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "memcmp",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "memchr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strcpy",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strncpy",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strcat",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strncat",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strcmp",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strncmp",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strchr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strrchr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strspn",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strcspn",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strpbrk",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strstr",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strtok",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strlen",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strerror",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strcoll",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strxfrm",
+      "header": "string.h",
+      "standard": "C90",
+      "family": "strings"
+    },
+    {
+      "name": "strdup",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings"
+    },
+    {
+      "name": "strndup",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings"
+    },
+    {
+      "name": "strnlen",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings"
+    },
+    {
+      "name": "strtok_r",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings"
+    },
+    {
+      "name": "strerror_r",
+      "header": "string.h",
+      "standard": "POSIX.1-2008",
+      "family": "strings"
+    },
+    {
+      "name": "atoi",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric"
+    },
+    {
+      "name": "atol",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric"
+    },
+    {
+      "name": "strtol",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric"
+    },
+    {
+      "name": "strtoul",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric"
+    },
+    {
+      "name": "strtod",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "numeric"
+    },
+    {
+      "name": "atoll",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "strtoll",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "strtoull",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "strtof",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "strtold",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "strtoimax",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "strtoumax",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "imaxabs",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "imaxdiv",
+      "header": "inttypes.h",
+      "standard": "C99",
+      "family": "numeric"
+    },
+    {
+      "name": "malloc",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "calloc",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "realloc",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "free",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "abort",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "exit",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "atexit",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "getenv",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "system",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "bsearch",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "qsort",
+      "header": "stdlib.h",
+      "standard": "C90",
+      "family": "allocation"
+    },
+    {
+      "name": "_Exit",
+      "header": "stdlib.h",
+      "standard": "C99",
+      "family": "allocation"
+    },
+    {
+      "name": "posix_memalign",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation"
+    },
+    {
+      "name": "setenv",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation"
+    },
+    {
+      "name": "unsetenv",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation"
+    },
+    {
+      "name": "realpath",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation"
+    },
+    {
+      "name": "mkstemp",
+      "header": "stdlib.h",
+      "standard": "POSIX.1-2008",
+      "family": "allocation"
+    },
+    {
+      "name": "printf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "sprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "vprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "vfprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "vsprintf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "scanf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fscanf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "sscanf",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fopen",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fclose",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fflush",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fread",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fwrite",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "fseek",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "ftell",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "tmpfile",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "remove",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "rename",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "ungetc",
+      "header": "stdio.h",
+      "standard": "C90",
+      "family": "stdio"
+    },
+    {
+      "name": "snprintf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio"
+    },
+    {
+      "name": "vsnprintf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio"
+    },
+    {
+      "name": "vscanf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio"
+    },
+    {
+      "name": "vfscanf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio"
+    },
+    {
+      "name": "vsscanf",
+      "header": "stdio.h",
+      "standard": "C99",
+      "family": "stdio"
+    },
+    {
+      "name": "getline",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio"
+    },
+    {
+      "name": "getdelim",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio"
+    },
+    {
+      "name": "fseeko",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio"
+    },
+    {
+      "name": "ftello",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio"
+    },
+    {
+      "name": "fdopen",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio"
+    },
+    {
+      "name": "fileno",
+      "header": "stdio.h",
+      "standard": "POSIX.1-2008",
+      "family": "stdio"
+    },
+    {
+      "name": "mbrlen",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "mbrtowc",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcrtomb",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "mbsrtowcs",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcsrtombs",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "mbsinit",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcslen",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcscmp",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcscpy",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcschr",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wmemcpy",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wmemmove",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wmemcmp",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wmemset",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcstol",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcstoul",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcstoll",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcstoull",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcstod",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcstof",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "wcstold",
+      "header": "wchar.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "iswalpha",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "iswspace",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "towlower",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "towupper",
+      "header": "wctype.h",
+      "standard": "C95/C99",
+      "family": "characters"
+    },
+    {
+      "name": "sigemptyset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigfillset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigaddset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigdelset",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigismember",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigaction",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigprocmask",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigpending",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "sigsuspend",
+      "header": "signal.h",
+      "standard": "POSIX.1-2008",
+      "family": "signals"
+    },
+    {
+      "name": "stat",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "lstat",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "fstat",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "mkdir",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "mkfifo",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "chmod",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "fchmod",
+      "header": "sys/stat.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "access",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "read",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "write",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "close",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "unlink",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "rmdir",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "readlink",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "symlink",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "link",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "fsync",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "ftruncate",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "pread",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "pwrite",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "opendir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "readdir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "closedir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "rewinddir",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "dirfd",
+      "header": "dirent.h",
+      "standard": "POSIX.1-2008",
+      "family": "filesystem"
+    },
+    {
+      "name": "fork",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process"
+    },
+    {
+      "name": "execve",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process"
+    },
+    {
+      "name": "getpid",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process"
+    },
+    {
+      "name": "getuid",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process"
+    },
+    {
+      "name": "getgid",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process"
+    },
+    {
+      "name": "getgroups",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process"
+    },
+    {
+      "name": "sysconf",
+      "header": "unistd.h",
+      "standard": "POSIX.1-2008",
+      "family": "process"
+    },
+    {
+      "name": "time",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time"
+    },
+    {
+      "name": "clock",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time"
+    },
+    {
+      "name": "difftime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time"
+    },
+    {
+      "name": "mktime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time"
+    },
+    {
+      "name": "localtime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time"
+    },
+    {
+      "name": "gmtime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time"
+    },
+    {
+      "name": "strftime",
+      "header": "time.h",
+      "standard": "C90",
+      "family": "time"
+    },
+    {
+      "name": "localtime_r",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time"
+    },
+    {
+      "name": "gmtime_r",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time"
+    },
+    {
+      "name": "clock_gettime",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time"
+    },
+    {
+      "name": "clock_getres",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time"
+    },
+    {
+      "name": "nanosleep",
+      "header": "time.h",
+      "standard": "POSIX.1-2008",
+      "family": "time"
+    },
+    {
+      "name": "regcomp",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex"
+    },
+    {
+      "name": "regexec",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex"
+    },
+    {
+      "name": "regerror",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex"
+    },
+    {
+      "name": "regfree",
+      "header": "regex.h",
+      "standard": "POSIX.1-2008",
+      "family": "regex"
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+--- a/gcc/config/pa/pa.cc
++++ b/gcc/config/pa/pa.cc
+@@ -2742,7 +2742,7 @@
+       if (VAL_14_BITS_P (intval))
+ 	return "ldi %1,%0";
+       else if ((intval & 0x7ff) == 0)
+-	return "ldil L%'%1,%0";
++	return "ldil %u1,%0";
+       else if (pa_zdepi_cint_p (intval))
+ 	return "{zdepi %Z1,%0|depwi,z %Z1,%0}";
+       else
+@@ -5483,6 +5483,15 @@
+ {
+   switch (code)
+     {
++    case 'u':
++      /* NeXT's L` selector uses the rounded LR/RR convention.  Applying it
++         to an exact ldil integer (whose low 11 bits are zero) can discard
++         bits 11 and 12.  A selector-free immediate loads the exact high
++         21 bits.  Symbolic HIGH/LO_SUM pairs retain their native selectors. */
++      if (!TARGET_NEXTSTEP)
++        fputs ("L'", file);
++      pa_print_operand (file, x, 0);
++      return;
+     case '!':
+       fputs (TARGET_NEXTSTEP ? "%r30" : "%sp", file);
+       return;
+--- a/gcc/config/pa/pa.md
++++ b/gcc/config/pa/pa.md
+@@ -1283,7 +1283,7 @@
+   "@
+    {com%I4clr|cmp%I4clr},%S2 %4,%3,%%r0\;ldi 0,%0
+    {com%I4clr|cmp%I4clr},%B2 %4,%3,%0\;ldi %1,%0
+-   {com%I4clr|cmp%I4clr},%B2 %4,%3,%0\;ldil L%'%1,%0
++   {com%I4clr|cmp%I4clr},%B2 %4,%3,%0\;ldil %u1,%0
+    {com%I4clr|cmp%I4clr},%B2 %4,%3,%0\;{zdepi|depwi,z} %Z1,%0"
+   [(set_attr "type" "multi,multi,multi,nullshift")
+    (set_attr "length" "8,8,8,8")])
+@@ -1300,11 +1300,11 @@
+   "@
+    {com%I4clr|cmp%I4clr},%S5 %4,%3,%%r0\;copy %2,%0
+    {com%I4clr|cmp%I4clr},%S5 %4,%3,%%r0\;ldi %2,%0
+-   {com%I4clr|cmp%I4clr},%S5 %4,%3,%%r0\;ldil L%'%2,%0
++   {com%I4clr|cmp%I4clr},%S5 %4,%3,%%r0\;ldil %u2,%0
+    {com%I4clr|cmp%I4clr},%S5 %4,%3,%%r0\;{zdepi|depwi,z} %Z2,%0
+    {com%I4clr|cmp%I4clr},%B5 %4,%3,%%r0\;copy %1,%0
+    {com%I4clr|cmp%I4clr},%B5 %4,%3,%%r0\;ldi %1,%0
+-   {com%I4clr|cmp%I4clr},%B5 %4,%3,%%r0\;ldil L%'%1,%0
++   {com%I4clr|cmp%I4clr},%B5 %4,%3,%%r0\;ldil %u1,%0
+    {com%I4clr|cmp%I4clr},%B5 %4,%3,%%r0\;{zdepi|depwi,z} %Z1,%0"
+   [(set_attr "type" "multi,multi,multi,nullshift,multi,multi,multi,nullshift")
+    (set_attr "length" "8,8,8,8,8,8,8,8")])
+@@ -1338,7 +1338,7 @@
+    cmp%I4clr,*%S2 %4,%3,%%r0\;ldi 0,%0
+    cmp%I4clr,*%B2 %4,%3,%0\;copy %1,%0
+    cmp%I4clr,*%B2 %4,%3,%0\;ldi %1,%0
+-   cmp%I4clr,*%B2 %4,%3,%0\;ldil L%'%1,%0
++   cmp%I4clr,*%B2 %4,%3,%0\;ldil %u1,%0
+    cmp%I4clr,*%B2 %4,%3,%0\;depdi,z %z1,%0"
+   [(set_attr "type" "multi,multi,multi,multi,nullshift")
+    (set_attr "length" "8,8,8,8,8")])
+@@ -1355,11 +1355,11 @@
+   "@
+    cmp%I4clr,*%S5 %4,%3,%%r0\;copy %2,%0
+    cmp%I4clr,*%S5 %4,%3,%%r0\;ldi %2,%0
+-   cmp%I4clr,*%S5 %4,%3,%%r0\;ldil L%'%2,%0
++   cmp%I4clr,*%S5 %4,%3,%%r0\;ldil %u2,%0
+    cmp%I4clr,*%S5 %4,%3,%%r0\;depdi,z %z2,%0
+    cmp%I4clr,*%B5 %4,%3,%%r0\;copy %1,%0
+    cmp%I4clr,*%B5 %4,%3,%%r0\;ldi %1,%0
+-   cmp%I4clr,*%B5 %4,%3,%%r0\;ldil L%'%1,%0
++   cmp%I4clr,*%B5 %4,%3,%%r0\;ldil %u1,%0
+    cmp%I4clr,*%B5 %4,%3,%%r0\;depdi,z %z1,%0"
+   [(set_attr "type" "multi,multi,multi,nullshift,multi,multi,multi,nullshift")
+    (set_attr "length" "8,8,8,8,8,8,8,8")])
+@@ -2205,7 +2205,7 @@
+    ldw RT'%A1,%0
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    {zdepi|depwi,z} %Z1,%0
+    ldw%M1 %1,%0
+    stw%M0 %r1,%0
+@@ -2233,7 +2233,7 @@
+    ldw RT'%A1,%0
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    {zdepi|depwi,z} %Z1,%0
+    ldw%M1 %1,%0
+    stw%M0 %r1,%0
+@@ -2261,7 +2261,7 @@
+    ldw RT'%A1,%0
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    {zdepi|depwi,z} %Z1,%0
+    ldw%M1 %1,%0
+    stw%M0 %r1,%0
+@@ -2447,7 +2447,7 @@
+    ldw RT'%A1,%0
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    {zdepi|depwi,z} %Z1,%0
+    ldw%M1 %1,%0
+    stw%M0 %r1,%0
+@@ -2973,7 +2973,7 @@
+   "@
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    {zdepi|depwi,z} %Z1,%0
+    ldh%M1 %1,%0
+    sth%M0 %r1,%0
+@@ -3133,7 +3133,7 @@
+   "@
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    {zdepi|depwi,z} %Z1,%0
+    ldb%M1 %1,%0
+    stb%M0 %r1,%0
+@@ -4108,7 +4108,7 @@
+   "@
+    copy %r1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    depdi,z %z1,%0
+    ldd%M1 %1,%0
+    std%M0 %r1,%0
+@@ -4132,7 +4132,7 @@
+   "@
+    copy %r1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    depdi,z %z1,%0
+    ldd%M1 %1,%0
+    std%M0 %r1,%0"
+@@ -4285,7 +4285,7 @@
+    ldd RT'%A1,%0
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    depdi,z %z1,%0
+    ldd%M1 %1,%0
+    std%M0 %r1,%0
+@@ -4312,7 +4312,7 @@
+    ldd RT'%A1,%0
+    copy %1,%0
+    ldi %1,%0
+-   ldil L%'%1,%0
++   ldil %u1,%0
+    depdi,z %z1,%0
+    ldd%M1 %1,%0
+    std%M0 %r1,%0

@@ -1,0 +1,67 @@
+--- a/tre.h
++++ b/tre.h
+@@ -33,6 +33,10 @@
+ #include <wchar.h>
+ #include <wctype.h>
+ 
++#ifndef CHARCLASS_NAME_MAX
++#define CHARCLASS_NAME_MAX 14
++#endif
++
+ #undef  TRE_MBSTATE
+ 
+ #define NDEBUG
+@@ -50,7 +54,7 @@
+ 
+ /* Wide characters. */
+ typedef wint_t tre_cint_t;
+-#define TRE_CHAR_MAX 0x10ffff
++#define TRE_CHAR_MAX WCHAR_MAX
+ 
+ #define tre_isalnum iswalnum
+ #define tre_isalpha iswalpha
+@@ -187,12 +191,12 @@
+   void **provided;
+ } *tre_mem_t;
+ 
+-#define tre_mem_new_impl   __tre_mem_new_impl
+-#define tre_mem_alloc_impl __tre_mem_alloc_impl
+-#define tre_mem_destroy    __tre_mem_destroy
+-
+-hidden tre_mem_t tre_mem_new_impl(int provided, void *provided_block);
+-hidden void *tre_mem_alloc_impl(tre_mem_t mem, int provided, void *provided_block,
++#define tre_mem_new_impl   ns33_tre_mem_new_impl
++#define tre_mem_alloc_impl ns33_tre_mem_alloc_impl
++#define tre_mem_destroy    ns33_tre_mem_destroy
++
++tre_mem_t tre_mem_new_impl(int provided, void *provided_block);
++void *tre_mem_alloc_impl(tre_mem_t mem, int provided, void *provided_block,
+                                 int zero, size_t size);
+ 
+ /* Returns a new memory allocator or NULL if out of memory. */
+@@ -222,7 +226,7 @@
+ 
+ 
+ /* Frees the memory allocator and all memory allocated with it. */
+-hidden void tre_mem_destroy(tre_mem_t mem);
++void tre_mem_destroy(tre_mem_t mem);
+ 
+ #define xmalloc malloc
+ #define xcalloc calloc
+--- a/regerror.c
++++ b/regerror.c
+@@ -1,7 +1,6 @@
+ #include <string.h>
+ #include <regex.h>
+ #include <stdio.h>
+-#include "locale_impl.h"
+ 
+ /* Error message strings for error codes listed in `regex.h'.  This list
+    needs to be in sync with the codes listed there, naturally. */
+@@ -32,6 +31,5 @@
+ 	const char *s;
+ 	for (s=messages; e && *s; e--, s+=strlen(s)+1);
+ 	if (!*s) s++;
+-	s = LCTRANS_CUR(s);
+ 	return 1+snprintf(buf, size, "%s", s);
+ }

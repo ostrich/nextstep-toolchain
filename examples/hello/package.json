@@ -1,0 +1,19 @@
+{
+  "name": "Hello",
+  "version": "1.0",
+  "revision": 1,
+  "title": "Hello NEXTSTEP",
+  "description": "A small cross-compilation and packaging example.",
+  "architectures": [
+    "m68k",
+    "i386",
+    "hppa",
+    "sparc"
+  ],
+  "files": {
+    "usr/local/bin/hello": {
+      "source": "stage/usr/local/bin/hello",
+      "mode": "0755"
+    }
+  }
+}
