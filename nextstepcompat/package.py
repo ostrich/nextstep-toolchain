@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 import textwrap
+from build import check_sdk_preparer
 
 ROOT = Path(__file__).resolve().parent
 PROJECT = ROOT.parent
@@ -16,10 +17,17 @@ p.add_argument("--shared", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
 p.add_argument("--toolchain", type=Path, default=ROOT.parent / "install/current")
 p.add_argument("--revision", type=int, default=6)
+p.add_argument("--package", choices=["all", "runtime", "development"], default="all",
+               help="Select runtime, development headers, or both")
 a = p.parse_args()
 shared = a.shared.resolve()
 out = a.output.resolve()
 tc = a.toolchain.resolve()
+if a.package != "runtime":
+    try:
+        check_sdk_preparer(tc)
+    except ValueError as error:
+        p.error(str(error))
 
 
 def digest(path):
@@ -55,6 +63,8 @@ version = (ROOT / "VERSION").read_text().strip()
 runtime = []
 development = []
 for name, dev in [("NextStepCompat", False), ("NextStepCompat-dev", True)]:
+    if a.package == "development" and not dev or a.package == "runtime" and dev:
+        continue
     d = out / name
     d.mkdir()
     files = {}
@@ -74,8 +84,8 @@ for name, dev in [("NextStepCompat", False), ("NextStepCompat-dev", True)]:
         paragraphs = [
             name + " " + version + "-" + str(a.revision),
             description,
-            "Install the matching NextStepCompat runtime first. The .a file imports the separately installed shared runtime; it contains no static implementation.",
-            "Headers install in /usr/local/include/nextstepcompat and the import library in /usr/local/lib. With nextstep-gcc, select this wrapper directory using --compat-headers rather than a second -I wrapper tree. Link with -lnextstepcompat. The Linux toolchain ships its own matching development inputs.",
+            "Install the NextStepCompat runtime first. The .a file imports its shared interface; it contains no static implementation. Runtime and development package revisions need not match when the shared interface is unchanged.",
+            "Headers install in /usr/local/include/nextstepcompat and the import library in /usr/local/lib. With nextstep-gcc, select this wrapper directory using --compat-headers rather than a second -I wrapper tree. Link with -lnextstepcompat. The Linux toolchain ships its own matching development inputs. These headers require the updated modern-toolchain SDK preparer (header policy 1); native NeXT compiler use is a future port and has not been qualified.",
         ]
         dependencies = ["libnextstepcompat.1.shlib"]
         provides = []
@@ -126,6 +136,14 @@ for name, dev in [("NextStepCompat", False), ("NextStepCompat-dev", True)]:
         )
         + "\n"
     )
+    if dev:
+        info = json.loads(public.read_text())
+        info["headers_sha256"] = {
+            str(header.relative_to(ROOT / "include")): digest(header)
+            for header in sorted((ROOT / "include").rglob("*.h"))
+        }
+        info["sdk_header_policy"] = 1
+        public.write_text(json.dumps(info, indent=2) + "\n")
     add("usr/local/share/build-info/" + name + ".json", public)
     readme = d / "README.txt"
     readme.write_text(
@@ -175,5 +193,5 @@ for name, dev in [("NextStepCompat", False), ("NextStepCompat-dev", True)]:
 (out / "runtime-packages.json").write_text(json.dumps(runtime, indent=2) + "\n")
 (out / "development-packages.json").write_text(json.dumps(development, indent=2) + "\n")
 print(
-    "Built independent runtime/development packages; installed qualification is separate"
+    "Built selected native packages; installed qualification is separate"
 )
