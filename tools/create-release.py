@@ -174,9 +174,6 @@ def main():
         temporary.rename(archive)
     finally:
         temporary.unlink(missing_ok=True)
-    archive.with_name(archive.name + ".sha256").write_text(
-        digest(archive.read_bytes()) + "  " + archive.name + "\n"
-    )
     print(archive)
 
 
