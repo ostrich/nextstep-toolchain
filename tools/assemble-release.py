@@ -7,6 +7,8 @@ from pathlib import Path
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("--toolchain", type=Path, required=True)
 p.add_argument("--output", type=Path, required=True)
+p.add_argument("--shared-tools", type=Path, help="Qualified mkshlib build for this host")
+p.add_argument("--nextufs", type=Path, help="nextufs executable built for this host")
 p.add_argument(
     "--compiler-builds",
     type=Path,
@@ -30,6 +32,21 @@ shutil.copytree(
     symlinks=True,
     ignore=shutil.ignore_patterns("sdk", "workspace", "work", "dist", "__pycache__"),
 )
+# A portable input may contain wrapped host programs. All such programs must
+# be replaced, including mkshlib, before bundling this host's runtime again.
+wrapped_input = (out / "share/host-runtime.json").exists()
+if wrapped_input:
+    if not a.shared_tools or not a.nextufs:
+        p.error("Rehosting a portable bundle requires --shared-tools and --nextufs")
+    shutil.rmtree(out / "libexec/host")
+    (out / "share/host-runtime.json").unlink()
+    for elf in (out / "libexec").rglob("*.elf"):
+        elf.unlink()
+if wrapped_input:
+    for arch in ["i386", "m68k", "hppa", "sparc"]:
+        for suffix in ["gcc", "g++", "cpp", "as", "ld", "ar", "ranlib", "nm", "strip", "libtool"]:
+            (out / "bin" / (arch + "-next-nextstep3.3-" + suffix)).unlink(missing_ok=True)
+    (out / "bin/nextstep-lipo").unlink(missing_ok=True)
 root = Path(__file__).resolve().parents[1]
 import subprocess
 
@@ -91,12 +108,22 @@ for name in [
     shutil.copy2(binary, dest)
     subprocess.run(["strip", "--strip-unneeded", str(dest)], check=True)
 
+if a.shared_tools:
+    shared_record = json.loads((a.shared_tools / "build-record.json").read_text())
+    binary = a.shared_tools / "bin/mkshlib"
+    if (shared_record.get("status") != "passed" or
+            hashlib.sha256(binary.read_bytes()).hexdigest() != shared_record["mkshlib_sha256"] or
+            shared_record["host_build_record_sha256"] != hashlib.sha256((a.host_tools / "build-record.json").read_bytes()).hexdigest()):
+        p.error("Shared-tool provenance mismatch")
+    shutil.copy2(binary, out / "libexec/cctools/mkshlib")
+    subprocess.run(["strip", "--strip-unneeded", str(out / "libexec/cctools/mkshlib")], check=True)
 shutil.copy2(source / "toolchain.json", out / "share/compiler-input.json")
 shutil.copy2(root / "tools/nextstep-gcc", out / "bin/nextstep-gcc")
 shutil.copy2(root / "tools/nextstep-shlib", out / "bin/nextstep-shlib")
 shutil.copytree(
     root / "src/nextpkg",
     out / "libexec/nextpkg",
+    dirs_exist_ok=True,
     ignore=shutil.ignore_patterns("__pycache__", "tests"),
 )
 (out / "bin/nextpkg").write_text(
@@ -107,6 +134,7 @@ shutil.copytree(
     (root / "docs/bundle-README.md")
     .read_text()
     .replace("@GCC_VERSION@", source_manifest["gcc_version"])
+    .replace("@HOST_ARCH@", {"aarch64": "arm64"}.get(__import__("platform").machine(), __import__("platform").machine()))
 )
 shutil.copy2(root / "PORTING.md", out / "PORTING.md")
 shutil.copytree(root / "licenses", out / "share/licenses", dirs_exist_ok=True)
@@ -114,8 +142,8 @@ shutil.copy2(root / "src/nextufs/LICENSE", out / "share/licenses/nextufs-MIT.txt
 shutil.copy2(root / "src/nextpkg/LICENSE", out / "share/licenses/nextpkg-MIT.txt")
 (out / "README.txt").unlink(missing_ok=True)
 shutil.copy2(root / "tools/setup-sdk.py", out / "libexec/setup-sdk.py")
-(out / "libexec/nextufs").mkdir()
-shutil.copy2(root / "src/nextufs/nextufs", out / "libexec/nextufs/nextufs")
+(out / "libexec/nextufs").mkdir(exist_ok=True)
+shutil.copy2(a.nextufs or root / "src/nextufs/nextufs", out / "libexec/nextufs/nextufs")
 subprocess.run(
     ["strip", "--strip-unneeded", str(out / "libexec/nextufs/nextufs")], check=True
 )
@@ -175,6 +203,8 @@ manifest["release_host_compilers"] = {
     ).hexdigest()
     for arch in ["m68k", "i386", "hppa", "sparc"]
 }
+import platform
+manifest["host_architecture"] = platform.machine()
 manifest["files"] = {
     str(f.relative_to(out)): hashlib.sha256(f.read_bytes()).hexdigest()
     for f in out.rglob("*")

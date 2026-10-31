@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--jobs', type=int, default=8)
 p.add_argument('--cc', default='clang')
+p.add_argument('--host-abi', choices=['i386', 'native'], default='native',
+               help='Classic i386 host ABI or native Linux ABI')
 p.add_argument('--output', type=Path, default=ROOT / 'work/host-tools')
 a = p.parse_args()
 if sys.platform != 'linux':
@@ -52,7 +54,8 @@ for item in patches:
                    check=True, stdout=subprocess.DEVNULL)
 # Apple exports this header as mach/machine.h in its installed SDK.
 shutil.copyfile(S / 'include/mach/machine-cctools.h', S / 'include/mach/machine.h')
-flags = [a.cc, '-m32', '-std=gnu11', '-O2', '-g0', '-ffile-prefix-map=' + str(ROOT) + '=SOURCE', '-fcommon',
+abi_flags = ['-m32'] if a.host_abi == 'i386' else []
+flags = [a.cc, *abi_flags, '-std=gnu11', '-O2', '-g0', '-ffile-prefix-map=' + str(ROOT) + '=SOURCE', '-fcommon',
          '-Wno-deprecated-declarations', '-Werror=implicit-function-declaration',
          '-Werror=int-conversion', '-Werror=incompatible-pointer-types', '-Wno-format',
          '-Wno-constant-conversion', '-Wno-unused-command-line-argument',
@@ -86,7 +89,7 @@ def batch(files, directory, extra=()):
 def link(name, objects):
     bin_dir = B / 'bin'
     bin_dir.mkdir(exist_ok=True)
-    row = command([a.cc, '-m32', '-o', str(bin_dir / name), *objects], B / (name + '-link.log'))
+    row = command([a.cc, *abi_flags, '-o', str(bin_dir / name), *objects], B / (name + '-link.log'))
     records.append(row)
     if row['exitcode']:
         raise RuntimeError((B / row['log']).read_text())
@@ -130,7 +133,8 @@ read sections symbols write_object xmalloc dwarf2dbg'''.split()
 finally:
     record = {'sources': lock, 'patch_sha256': hashlib.sha256(patch.read_bytes()).hexdigest(),
               'patches_sha256': {f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in patches},
-              'host_abi': 'Linux i386 (requires 32-bit libc)', 'optimization': '-O2',
+              'host_abi': a.host_abi,
+              'host_triplet': subprocess.check_output([a.cc, '-dumpmachine'], text=True).strip(), 'optimization': '-O2',
               'commands': records, 'status': locals().get('status', 'failed'),
               'compatibility_sha256': {f.name: hashlib.sha256(f.read_bytes()).hexdigest()
                                        for f in (ROOT / 'toolchain/compat').glob('*.[ch]')},

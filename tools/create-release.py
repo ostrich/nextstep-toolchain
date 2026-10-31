@@ -94,7 +94,11 @@ def main():
         p.error("SDK compilation/link checks did not pass")
     manifest = json.loads((stage / "toolchain.json").read_text())
     version = manifest["gcc_version"]
-    name = f"nextstep-toolchain-{version}-{a.revision}-linux-x86_64"
+    host = manifest.get("host_architecture", "x86_64")
+    if host not in ["x86_64", "aarch64"]:
+        p.error("Unsupported release host architecture: " + host)
+    host_name = {"aarch64": "arm64"}.get(host, host)
+    name = f"nextstep-toolchain-{version}-{a.revision}-linux-{host_name}"
     destination = a.output.resolve()
     destination.mkdir(parents=True, exist_ok=True)
     archive = destination / (name + ".tar.gz")

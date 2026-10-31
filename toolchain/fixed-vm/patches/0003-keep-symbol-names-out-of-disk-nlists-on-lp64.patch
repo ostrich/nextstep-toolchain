@@ -1,0 +1,409 @@
+--- a/mkshlib/host.c
++++ b/mkshlib/host.c
+@@ -283,17 +283,17 @@
+ 	       (unsigned long)symbols[i].n_un.n_strx > string_size)
+ 		fatal("bad string index for symbol %d in target shared "
+ 		      "library: %s", i, target_filename);
+-	    symbols[i].n_un.n_name = strings + symbols[i].n_un.n_strx;
+-	    hash_key = hash_string(symbols[i].n_un.n_name) % EXT_HASH_SIZE;
++	    
++	    hash_key = hash_string((strings + symbols[i].n_un.n_strx)) % EXT_HASH_SIZE;
+ 	    extp = ext_hash[hash_key];
+ 	    while(extp != (struct ext *)0){
+-		if(strcmp(symbols[i].n_un.n_name, extp->name) == 0)
++		if(strcmp((strings + symbols[i].n_un.n_strx), extp->name) == 0)
+ 		    fatal("symbol %s appears more than once in target shared "
+ 			  "library: %s", extp->name, target_filename);
+ 		extp = extp->next;
+ 	    }
+ 	    extp = allocate(sizeof(struct ext));
+-	    extp->name = savestr(symbols[i].n_un.n_name);
++	    extp->name = savestr((strings + symbols[i].n_un.n_strx));
+ 	    extp->value = symbols[i].n_value;
+ 	    extp->bp = (struct branch *)0;
+ 	    extp->branch_value = BAD_ADDRESS;
+@@ -456,6 +456,7 @@
+     struct symtab_command *st;
+     struct nlist *symbols;
+     char *strings, *p, *q;
++    char **symbol_names;
+     struct ext *extp;
+ 
+ 	i = *((long *)cookie);
+@@ -488,6 +489,7 @@
+ 	/* read the symbol table */
+ 	symbols = (struct nlist *)(ofile->object_addr + st->symoff);
+ 	nsyms = st->nsyms;
++    symbol_names = allocate(nsyms * sizeof(*symbol_names));
+ 	if(ofile->object_byte_sex != host_byte_sex)
+ 	    swap_nlist(symbols, nsyms, host_byte_sex);
+ 
+@@ -505,13 +507,13 @@
+ 	       (unsigned long)symbols[j].n_un.n_strx > string_size)
+ 		fatal("bad string index for symbol %ld in object file: %s ",
+ 		      j, ofile->file_name);
+-	    symbols[j].n_un.n_name = strings + symbols[j].n_un.n_strx;
++	    symbol_names[j] = strings + symbols[j].n_un.n_strx;
+ 
+ 	    /*
+ 	     * If this symbol is aliased to another symbol then change
+ 	     * it's name to the real symbol.
+ 	     */
+-	    p = symbols[j].n_un.n_name;
++	    p = symbol_names[j];
+ 	    hash_key = hash_string(p) % EXT_HASH_SIZE;
+ 	    extp = ext_hash[hash_key];
+ 	    while(extp != (struct ext *)0){
+@@ -524,7 +526,7 @@
+ 		      "shared library: %s", p, ofile->file_name,
+ 		      target_filename);
+ 	    if(extp->alias != (struct ext *)0){
+-		symbols[j].n_un.n_name = extp->alias->name;
++		symbol_names[j] = extp->alias->name;
+ 	    }
+ 	    else{
+ 		/*
+@@ -553,15 +555,15 @@
+ 		if(symbols[j].n_type == (N_UNDF|N_EXT)){
+ 		    object_list[i]->pu_nsymbols++;
+ 		    object_list[i]->pu_string_size +=
+-					strlen(symbols[j].n_un.n_name) + 1;
+-/*
+-printf("private undefined = %s\n", symbols[j].n_un.n_name);
++					strlen(symbol_names[j]) + 1;
++/*
++printf("private undefined = %s\n", symbol_names[j]);
+ */
+ 		    symbols[j].n_type = N_PRIVATE_UNDF;
+ 		}
+ 		else{
+ /*
+-printf("private defined = %s\n", symbols[j].n_un.n_name);
++printf("private defined = %s\n", symbol_names[j]);
+ */
+ 		    symbols[j].n_type &= ~N_EXT;
+ 		}
+@@ -570,7 +572,7 @@
+ 
+ 	    object_list[i]->nsymbols++;
+ 	    object_list[i]->string_size +=
+-				    strlen(symbols[j].n_un.n_name) + 1;
++				    strlen(symbol_names[j]) + 1;
+ 	}
+ 
+ 	/*
+@@ -592,26 +594,27 @@
+ 	for(j = 0; j < nsyms; j++){
+ 	    if(symbols[j].n_type == N_PRIVATE_UNDF){
+ 		object_list[i]->pu_symbols[l] = symbols[j];
+-		strcpy(q, symbols[j].n_un.n_name);
+-		object_list[i]->pu_symbols[l].n_un.n_name = q;
++		strcpy(q, symbol_names[j]);
++		object_list[i]->pu_symbols[l].n_un.n_strx = q - object_list[i]->pu_strings;
+ /*
+ printf("recording private undefined = %s value = 0x%x\n",
+-object_list[i]->pu_symbols[l].n_un.n_name, 
++(object_list[i]->pu_strings + object_list[i]->pu_symbols[l].n_un.n_strx), 
+ object_list[i]->pu_symbols[l].n_value);
+ */
+ 		l++;
+-		q += strlen(symbols[j].n_un.n_name) + 1;
++		q += strlen(symbol_names[j]) + 1;
+ 		continue;
+ 	    }
+ 	    /* again if it is not an external symbol skip it */
+ 	    if((symbols[j].n_type & N_EXT) == 0)
+ 		continue;
+ 	    object_list[i]->symbols[k] = symbols[j];
+-	    strcpy(p, symbols[j].n_un.n_name);
+-	    object_list[i]->symbols[k].n_un.n_name = p;
++	    strcpy(p, symbol_names[j]);
++	    object_list[i]->symbols[k].n_un.n_strx = p - object_list[i]->strings;
+ 	    k++;
+-	    p += strlen(symbols[j].n_un.n_name) + 1;
+-	}
++	    p += strlen(symbol_names[j]) + 1;
++	}
++    free(symbol_names);
+ 
+ #ifdef HOST_DEBUG
+ 	printf("Symbol tables of host objects\n");
+@@ -621,14 +624,14 @@
+ 		j < object_list[i]->nsymbols;
+ 		j++){
+ 		printf("\t\tsymbol = %s value = 0x%x\n",
+-			object_list[i]->symbols[j].n_un.n_name, 
++			(object_list[i]->strings + object_list[i]->symbols[j].n_un.n_strx), 
+ 			object_list[i]->symbols[j].n_value);
+ 	    }
+ 	    for(j = 0;
+ 		j < object_list[i]->pu_nsymbols;
+ 		j++){
+ 		printf("\t\tprivate undefined = %s value = 0x%x\n",
+-			object_list[i]->pu_symbols[j].n_un.n_name, 
++			(object_list[i]->pu_strings + object_list[i]->pu_symbols[j].n_un.n_strx), 
+ 			object_list[i]->pu_symbols[j].n_value);
+ 	    }
+ 	}
+@@ -687,7 +690,7 @@
+ 		j < object_list[i]->nsymbols;
+ 		j++){
+ 		if((object_list[i]->symbols[j].n_type & N_TYPE) == N_UNDF){
+-		    p = object_list[i]->symbols[j].n_un.n_name;
++		    p = (object_list[i]->strings + object_list[i]->symbols[j].n_un.n_strx);
+ 		    hash_key = hash_string(p) % EXT_HASH_SIZE;
+ 		    extp = ext_hash[hash_key];
+ 		    while(extp != (struct ext *)0){
+@@ -730,7 +733,7 @@
+ 	    for(j = 0;
+ 		j < object_list[i]->pu_nsymbols;
+ 		j++){
+-		p = object_list[i]->pu_symbols[j].n_un.n_name;
++		p = (object_list[i]->pu_strings + object_list[i]->pu_symbols[j].n_un.n_strx);
+ 		hash_key = hash_string(p) % EXT_HASH_SIZE;
+ 		extp = ext_hash[hash_key];
+ 		while(extp != (struct ext *)0){
+@@ -822,16 +825,16 @@
+ 	toc_object.ranlibs = allocate(toc_object.nranlibs *
+ 				      sizeof(struct ranlib));
+ 	toc_object.ranlib_strings =
+-		allocate(round(toc_object.ranlib_string_size, sizeof(long)));
++		allocate(round(toc_object.ranlib_string_size, sizeof(uint32_t)));
+ 	/* make sure the rounded area allways has the same value */
+ 	memset(toc_object.ranlib_strings + toc_object.ranlib_string_size, '\0',
+-	       round(toc_object.ranlib_string_size, sizeof(long)) -
++	       round(toc_object.ranlib_string_size, sizeof(uint32_t)) -
+ 	       toc_object.ranlib_string_size);
+ 	toc_object.object_size =
+-	    sizeof(long) +
++	    sizeof(uint32_t) +
+ 	    toc_object.nranlibs * sizeof(struct ranlib) +
+-	    sizeof(long) +
+-	    round(toc_object.ranlib_string_size, sizeof(long));
++	    sizeof(uint32_t) +
++	    round(toc_object.ranlib_string_size, sizeof(uint32_t));
+ 
+ 	ran_index = 0;
+ 	ran_strx = 0;
+@@ -890,7 +893,7 @@
+ 		  "toc_object.ranlib_string_size (%ld)", ran_strx,
+ 		  toc_object.ranlib_string_size);
+ 	toc_object.ranlib_string_size = round(toc_object.ranlib_string_size,
+-					      sizeof(long));
++					      sizeof(uint32_t));
+ 
+ 	/*
+ 	 * This can be sorted without fear of having the same symbol defined
+@@ -944,7 +947,7 @@
+ 	 * the output file is executed.
+ 	 */
+ 	lib_object.fvmlib_name_size = round(strlen(target_name) + 1,
+-					    sizeof(long));
++					    sizeof(uint32_t));
+ 	/*
+ 	 * This object file has one symbol.  It is the defining occurence of
+ 	 * the shared library definition symbol.  So this is added to the table
+@@ -955,7 +958,7 @@
+ 	toc_object.nranlibs++;
+ 	toc_object.ranlib_string_size += strlen(shlib_symbol_name) + 1;
+ 	lib_object.string_size = round(strlen(shlib_symbol_name) + 2,
+-				       sizeof(long));
++				       sizeof(uint32_t));
+ 
+ 	lib_object.object_size =
+ 	    sizeof(struct mach_header) +
+@@ -994,7 +997,7 @@
+ 	ref_object.string_size += strlen(shlib_reference_name) + 2;
+ 	for(i = 0; i < nobject_list; i++)
+ 	    ref_object.string_size += strlen(object_list[i]->filedef_name) + 1;
+-	ref_object.string_size = round(ref_object.string_size, sizeof(long));
++	ref_object.string_size = round(ref_object.string_size, sizeof(uint32_t));
+ 
+ 	ref_object.object_size =
+ 	    sizeof(struct mach_header) +
+@@ -1039,9 +1042,9 @@
+ 	     */
+ 	    strx = 1; /* room for the first zero byte */
+ 	    for(j = 0; j < op->nsymbols; j++){
+-		len = strlen(op->symbols[j].n_un.n_name) + 1;
++		len = strlen((op->strings + op->symbols[j].n_un.n_strx)) + 1;
+ 		if((op->symbols[j].n_type & N_TYPE) != N_UNDF){
+-		    p = op->symbols[j].n_un.n_name;
++		    p = (op->strings + op->symbols[j].n_un.n_strx);
+ 		    hash_key = hash_string(p) % EXT_HASH_SIZE;
+ 		    extp = ext_hash[hash_key];
+ 		    while(extp != (struct ext *)0){
+@@ -1090,14 +1093,14 @@
+ 		while(ip != (struct init *)0){
+ 		    init_symbol(op, ip->sinit, &(ip->sreloc), &(ip->svalue),
+ 			        &(ip->sdefined), op->nsymbols + new_symbols,
+-				(op->ninit * 2) * sizeof(long));
++				(op->ninit * 2) * sizeof(uint32_t));
+ 		    if(!ip->sdefined){
+ 			new_symbols++;
+ 			new_string_size += strlen(ip->sinit) + 1;
+ 		    }
+ 		    init_symbol(op, ip->pinit, &(ip->preloc), &(ip->pvalue),
+ 			        &(ip->pdefined), op->nsymbols + new_symbols,
+-				(op->ninit * 2 + 1) * sizeof(long));
++				(op->ninit * 2 + 1) * sizeof(uint32_t));
+ 		    if(!ip->pdefined){
+ 			new_symbols++;
+ 			new_string_size += strlen(ip->pinit) + 1;
+@@ -1141,16 +1144,16 @@
+ 	    object_list[i]->strings =
+ 			reallocate(object_list[i]->strings,
+ 	    			   round(object_list[i]->string_size +
+-				         new_string_size, sizeof(long)));
++				         new_string_size, sizeof(uint32_t)));
+ 	    /* zero the rounded area */
+ 	    memset(object_list[i]->strings +
+ 		   object_list[i]->string_size + new_string_size, '\0',
+ 	    	   round(object_list[i]->string_size + new_string_size,
+-			 sizeof(long)) -
++			 sizeof(uint32_t)) -
+ 		   (object_list[i]->string_size + new_string_size) );
+ 
+ 	    object_list[i]->string_size = round(object_list[i]->string_size +
+-					        new_string_size, sizeof(long));
++					        new_string_size, sizeof(uint32_t));
+ 	    /*
+ 	     * Add the new symbols and their strings to the symbol and string
+ 	     * table.  The init symbol must be added first and in this order
+@@ -1236,7 +1239,7 @@
+ 			      sizeof(struct segment_command) +
+ 				  sizeof(struct section) +
+ 			      sizeof(struct symtab_command) +
+-			      op->ninit * 2 * sizeof(long) +
++			      op->ninit * 2 * sizeof(uint32_t) +
+ 			      op->ninit * 2 * sizeof(struct relocation_info) +
+ 			      op->nsymbols * sizeof(struct nlist) +
+ 			      op->string_size;
+@@ -1397,8 +1400,8 @@
+ 	l = toc_object.nranlibs * sizeof(struct ranlib);
+ 	if(host_byte_sex != target_byte_sex)
+ 	    l = SWAP_LONG(l);
+-	*((long *)(buffer + offset)) = l;
+-	offset += sizeof(long);
++	*((uint32_t *)(buffer + offset)) = l;
++	offset += sizeof(uint32_t);
+ 	ranlibs = (struct ranlib *)(buffer + offset);
+ 	memcpy(buffer + offset, toc_object.ranlibs,
+ 	       toc_object.nranlibs * sizeof(struct ranlib));
+@@ -1408,8 +1411,8 @@
+ 	l = toc_object.ranlib_string_size;
+ 	if(host_byte_sex != target_byte_sex)
+ 	    l = SWAP_LONG(l);
+-	*((long *)(buffer + offset)) = l;
+-	offset += sizeof(long);
++	*((uint32_t *)(buffer + offset)) = l;
++	offset += sizeof(uint32_t);
+ 	memcpy(buffer + offset, toc_object.ranlib_strings,
+ 	       toc_object.ranlib_string_size);
+ 	offset += toc_object.ranlib_string_size;
+@@ -1734,7 +1737,7 @@
+     struct section *s;
+     struct symtab_command *st;
+     struct init *ip;
+-    long *contents;
++    uint32_t *contents;
+     struct nlist *symbols;
+     struct relocation_info *reloc, *relocs;
+ 
+@@ -1772,9 +1775,9 @@
+ 	 * memset(sg->segname, '\0', sizeof(sg->segname));
+ 	 */
+ 	sg->vmaddr = 0;
+-	sg->vmsize = op->ninit * 2 * sizeof(long);
++	sg->vmsize = op->ninit * 2 * sizeof(uint32_t);
+ 	sg->fileoff = sizeof(struct mach_header) + mh->sizeofcmds;
+-	sg->filesize = op->ninit * 2 * sizeof(long);
++	sg->filesize = op->ninit * 2 * sizeof(uint32_t);
+ 	sg->maxprot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
+ 	sg->initprot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
+ 	sg->nsects = 1;
+@@ -1785,11 +1788,11 @@
+ 	strcpy(s->sectname, SECT_FVMLIB_INIT0);
+ 	strcpy(s->segname, SEG_TEXT);
+ 	s->addr = 0;
+-	s->size = op->ninit * 2 * sizeof(long);
++	s->size = op->ninit * 2 * sizeof(uint32_t);
+ 	s->offset = sizeof(struct mach_header) + mh->sizeofcmds;
+ 	s->align = 2;
+ 	s->reloff = sizeof(struct mach_header) + mh->sizeofcmds +
+-		    op->ninit * 2 * sizeof(long);
++		    op->ninit * 2 * sizeof(uint32_t);
+ 	s->nreloc = op->ninit * 2;
+ 	s->flags = 0;
+ 	s->reserved1 = 0;
+@@ -1801,12 +1804,12 @@
+ 	st->cmdsize = sizeof(struct symtab_command);
+ 	st->symoff = sizeof(struct mach_header) +
+ 		     mh->sizeofcmds +
+-		     op->ninit * 2 * sizeof(long) +
++		     op->ninit * 2 * sizeof(uint32_t) +
+ 		     op->ninit * 2 * sizeof(struct relocation_info);
+ 	st->nsyms = op->nsymbols;
+ 	st->stroff = sizeof(struct mach_header) +
+ 		     mh->sizeofcmds +
+-		     op->ninit * 2 * sizeof(long) +
++		     op->ninit * 2 * sizeof(uint32_t) +
+ 		     op->ninit * 2 * sizeof(struct relocation_info) +
+ 		     op->nsymbols * sizeof(struct nlist);
+ 	st->strsize = op->string_size;
+@@ -1818,19 +1821,19 @@
+ 	if(op->inits != (struct init *)0){
+ 	    ip = op->inits;
+ 	    while(ip != (struct init *)0){
+-		contents = (long *)(buffer + offset);
++		contents = (uint32_t *)(buffer + offset);
+ 		if(host_byte_sex != target_byte_sex)
+ 		    *contents = SWAP_LONG(ip->svalue);
+ 		else
+ 		    *contents = ip->svalue;
+-		offset += sizeof(long);
+-
+-		contents = (long *)(buffer + offset);
++		offset += sizeof(uint32_t);
++
++		contents = (uint32_t *)(buffer + offset);
+ 		if(host_byte_sex != target_byte_sex)
+ 		    *contents = SWAP_LONG(ip->pvalue);
+ 		else
+ 		    *contents = ip->pvalue;
+-		offset += sizeof(long);
++		offset += sizeof(uint32_t);
+ 
+ 		ip = ip->next;
+ 	    }
+--- a/mkshlib/target.c
++++ b/mkshlib/target.c
+@@ -68,7 +68,7 @@
+ target(void)
+ {
+     int fd;
+-    unsigned long magic;
++    uint32_t magic;
+     struct mach_header mh;
+     char text_addr_string[10], data_addr_string[10];
+     struct alias *ap;
+@@ -91,8 +91,8 @@
+ 	    if((fd = open(object_list[0]->name, O_RDONLY, 0)) == -1)
+ 		system_fatal("can't open object file: %s",
+ 			     object_list[0]->name);
+-	    if(read(fd, &magic, sizeof(unsigned long)) !=
+-		    sizeof(unsigned long))
++	    if(read(fd, &magic, sizeof(uint32_t)) !=
++		    sizeof(uint32_t))
+ 		system_fatal("can't read magic number of object file: %s",
+ 			     object_list[0]->name);
+ 
+@@ -382,7 +382,7 @@
+ 	 *	mach header
+ 	 *	an LC_IDFVMLIB command for the library
+ 	 */
+-	fvmlib_name_size = round(strlen(target_name) + 1, sizeof(long));
++	fvmlib_name_size = round(strlen(target_name) + 1, sizeof(uint32_t));
+ 	object_size = sizeof(struct mach_header) +
+ 		      sizeof(struct fvmlib_command) +
+ 		      fvmlib_name_size;

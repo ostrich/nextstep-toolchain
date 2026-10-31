@@ -25,6 +25,8 @@ patch series. build.py, build-cxx-toolchain.py, build-runtime.py,
 build-libatomic.py and build-cxx-runtime.py build the target compilers and
 runtimes. build-host-tools.py and build-shared-tools.py build the Mach-O tools.
 rebuild-host-inputs.py supports rebuilding the pinned host-side components.
+Native 64-bit and Canadian cross builds are described in
+[Linux host architectures](../docs/linux-hosts.md).
 
 install-toolchain.py stages compiler components; bundle-host-runtime.py and
 install-public-tools.py make the assembled bundle self-contained. The stage-*

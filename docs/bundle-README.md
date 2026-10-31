@@ -5,8 +5,8 @@ for NEXTSTEP 3.3 on Intel, NeXT 68k, HPPA and SPARC. Binaries can also
 run on OPENSTEP, subject to the APIs used. Intel is tested; SPARC and m68k
 are expected to work but have not been tested.
 
-This is a Linux x86-64 toolchain. Extract it anywhere; it installs nothing.
-It needs Python 3.11+ and a Linux kernel with 32-bit x86 execution support.
+This is a Linux @HOST_ARCH@ toolchain. Extract it anywhere; it installs nothing.
+It needs Python 3.11+. All host executables use the native 64-bit architecture.
 The other host runtime libraries are included, so system multilib packages
 and separate GMP, MPFR, MPC, ISL or Zstandard installations are not needed.
 

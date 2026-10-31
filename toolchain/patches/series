@@ -7,3 +7,4 @@
 0007-read-dwarf4-debug-maps.patch
 0008-allow-bounded-zero-padding-after-classic-string-tables.patch
 0009-disable-uuid-in-strip-relocatable-debug-links.patch
+0010-separate-host-pointers-from-classic-mach-o-words.patch

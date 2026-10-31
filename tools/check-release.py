@@ -33,6 +33,9 @@ for name, target in manifest["symlinks"].items():
 for name in ["sdk", "workspace"]:
     if list((root / name).iterdir()):
         raise SystemExit("User-owned directory must be empty: " + name)
+for name in ["nextstep-gcc", "nextstep-g++", "nextstep-shlib", "nextpkg", "setup-sdk"]:
+    if not ((root / "bin" / name).stat().st_mode & 0o111):
+        raise SystemExit("Required command is not executable: " + name)
 known_sdk = {}
 if a.sdk_evidence:
     sdk = json.loads(a.sdk_evidence.read_text())
@@ -45,6 +48,12 @@ for f in root.rglob("*"):
         continue
     data = f.read_bytes()
     count += 1
+    host = manifest.get("host_architecture")
+    if host and data[:4] == b"\x7fELF":
+        machine = {"x86_64": 62, "aarch64": 183}.get(host)
+        if (machine is None or len(data) < 20 or data[4:6] != b"\x02\x01" or
+                int.from_bytes(data[18:20], "little") != machine):
+            raise SystemExit("Wrong host ELF architecture: " + str(f.relative_to(root)))
     if str(Path.home()).encode() in data or private_path.search(data):
         raise SystemExit("Private build detail in " + str(f.relative_to(root)))
     if f.suffix in [".iso", ".raw", ".img", ".pyc"]:

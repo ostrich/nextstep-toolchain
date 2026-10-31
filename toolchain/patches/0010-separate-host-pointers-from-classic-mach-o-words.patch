@@ -1,0 +1,969 @@
+--- a/include/stuff/bytesex.h
++++ b/include/stuff/bytesex.h
+@@ -92,6 +92,8 @@
+ 		      (((a) << 8) & 0x00ff0000) | \
+ 		      (((a) >> 8) & 0x0000ff00) | \
+ 	((unsigned long)(a) >> 24) )
++#else
++#define SWAP_LONG(a) SWAP_INT((uint32_t)(a))
+ #endif
+ 
+ __private_extern__ long long SWAP_LONG_LONG(
+--- a/ld/4byte_literals.h
++++ b/ld/4byte_literals.h
+@@ -54,7 +54,7 @@
+ 
+ /* The structure to hold an 4 byte literal */
+ struct literal4 {
+-    unsigned long long0;
++    uint32_t long0;
+ };
+ 
+ /* the blocks that store the liiterals; allocated as needed */
+--- a/ld/8byte_literals.c
++++ b/ld/8byte_literals.c
+@@ -296,7 +296,7 @@
+ get_hex_from_sectorder(
+ struct merged_section *ms,
+ unsigned long *index,
+-unsigned long *value,
++uint32_t *value,
+ unsigned long line_number)
+ {
+     unsigned long i, j;
+--- a/ld/8byte_literals.h
++++ b/ld/8byte_literals.h
+@@ -54,8 +54,8 @@
+ 
+ /* The structure to hold an 8 byte literal */
+ struct literal8 {
+-    unsigned long long0;
+-    unsigned long long1;
++    uint32_t long0;
++    uint32_t long1;
+ };
+ 
+ /* the blocks that store the literals; allocated as needed */
+@@ -96,7 +96,7 @@
+ __private_extern__ enum bool get_hex_from_sectorder(
+     struct merged_section *ms,
+     unsigned long *index,
+-    unsigned long *value,
++    uint32_t *value,
+     unsigned long line_number);
+ 
+ __private_extern__ unsigned long lookup_literal8(
+--- a/ld/dylibs.c
++++ b/ld/dylibs.c
+@@ -91,7 +91,7 @@
+ 	    name = outputfile;
+ 
+ 	cmdsize = sizeof(struct dylib_command) +
+-		  rnd(strlen(name) + 1, sizeof(long));
++		  rnd(strlen(name) + 1, sizeof(uint32_t));
+ 	dl = allocate(cmdsize);
+ 	memset(dl, '\0', cmdsize);
+ 	dl->cmd = LC_ID_DYLIB;
+@@ -271,7 +271,7 @@
+ 	    name = outputfile;
+ 
+ 	cmdsize = sizeof(struct dylinker_command) +
+-		  rnd(strlen(name) + 1, sizeof(long));
++		  rnd(strlen(name) + 1, sizeof(uint32_t));
+ 	dyld = allocate(cmdsize);
+ 	memset(dyld, '\0', cmdsize);
+ 	dyld->cmd = LC_ID_DYLINKER;
+@@ -304,7 +304,7 @@
+ 	name = umbrella_framework_name;
+ 
+ 	cmdsize = sizeof(struct sub_framework_command) +
+-		  rnd(strlen(name) + 1, sizeof(long));
++		  rnd(strlen(name) + 1, sizeof(uint32_t));
+ 	sub = allocate(cmdsize);
+ 	memset(sub, '\0', cmdsize);
+ 	sub->cmd = LC_SUB_FRAMEWORK;
+@@ -362,7 +362,7 @@
+ 		      "name is linked in", name);
+ 
+ 	    cmdsize = sizeof(struct sub_umbrella_command) +
+-		      rnd(strlen(name) + 1, sizeof(long));
++		      rnd(strlen(name) + 1, sizeof(uint32_t));
+ 	    sub = allocate(cmdsize);
+ 	    memset(sub, '\0', cmdsize);
+ 	    sub->cmd = LC_SUB_UMBRELLA;
+@@ -419,7 +419,7 @@
+ 		      "name is linked in", name);
+ 
+ 	    cmdsize = sizeof(struct sub_library_command) +
+-		      rnd(strlen(name) + 1, sizeof(long));
++		      rnd(strlen(name) + 1, sizeof(uint32_t));
+ 	    sub = allocate(cmdsize);
+ 	    memset(sub, '\0', cmdsize);
+ 	    sub->cmd = LC_SUB_LIBRARY;
+@@ -455,7 +455,7 @@
+ 	for(i = 0; i < nallowable_clients ; i++){
+ 	    name = allowable_clients[i];
+ 	    cmdsize = sizeof(struct sub_client_command) +
+-		      rnd(strlen(name) + 1, sizeof(long));
++		      rnd(strlen(name) + 1, sizeof(uint32_t));
+ 	    sub = allocate(cmdsize);
+ 	    memset(sub, '\0', cmdsize);
+ 	    sub->cmd = LC_SUB_CLIENT;
+--- a/ld/generic_reloc.c
++++ b/ld/generic_reloc.c
+@@ -431,7 +431,7 @@
+ 				input_pc += sizeof(short);
+ 				break;
+ 			    case 2: /* long (4 byte) */
+-				input_pc += sizeof(long);
++				input_pc += sizeof(uint32_t);
+ 				break;
+ 			    default:
+ 				/* the error check is catched below */
+@@ -568,8 +568,8 @@
+ 				    output_pc += sizeof(short);
+ 				    break;
+ 				case 2: /* long (4 byte) */
+-				    input_pc += sizeof(long);
+-				    output_pc += sizeof(long);
++				    input_pc += sizeof(uint32_t);
++				    output_pc += sizeof(uint32_t);
+ 				    break;
+ 				default:
+ 				    /* the error check is catched below */
+--- a/ld/generic_reloc.h
++++ b/ld/generic_reloc.h
+@@ -53,11 +53,11 @@
+ get_long(
+ void *addr)
+ {
+-    long l;
++    int32_t l;
+ 
+-	memcpy(&l, addr, sizeof(long));
++	memcpy(&l, addr, sizeof(uint32_t));
+ 	if(cur_obj->swapped)
+-	    return(SWAP_LONG(l));
++	    return((int32_t)SWAP_LONG(l));
+ 	else
+ 	    return(l);
+ }
+@@ -93,9 +93,10 @@
+ void *addr,
+ long value)
+ {
++    int32_t word = value;
+ 	if(cur_obj->swapped)
+-	    value = SWAP_LONG(value);
+-	memcpy(addr, &value, sizeof(long));
++	    word = SWAP_LONG(word);
++	memcpy(addr, &word, sizeof(word));
+ }
+ 
+ static
+--- a/ld/indirect_sections.c
++++ b/ld/indirect_sections.c
+@@ -110,7 +110,7 @@
+     unsigned long i, j, stride, section_type, nitems, index;
+     struct fine_reloc *fine_relocs;
+     struct nlist *nlists;
+-    unsigned long *indirect_symtab;
++    uint32_t *indirect_symtab;
+     struct undefined_map *undefined_map;
+     struct merged_symbol *merged_symbol, *indr_symbol;
+     enum bool new;
+@@ -195,7 +195,7 @@
+ 	/* setup pointers to the symbol, indirect symbol and string tables */
+ 	nlists = (struct nlist *)(cur_obj->obj_addr +
+ 				  cur_obj->symtab->symoff);
+-	indirect_symtab = (unsigned long *)(cur_obj->obj_addr +
++	indirect_symtab = (uint32_t *)(cur_obj->obj_addr +
+ 					    cur_obj->dysymtab->indirectsymoff);
+ 	strings = cur_obj->obj_addr + cur_obj->symtab->stroff;
+ 	if(redo_live == FALSE){
+@@ -1262,7 +1262,7 @@
+ {
+ #ifndef SA_RLD
+     unsigned long to_section_type, from_section_type;
+-    unsigned long *indirect_symtab;
++    uint32_t *indirect_symtab;
+     struct fine_reloc *to_fine_reloc, *from_fine_reloc;
+     struct merged_symbol *merged_symbol;
+     unsigned long stride;
+@@ -1415,7 +1415,7 @@
+ 		 * case we check for the same indirect symbol table entry
+ 		 * (that is the same index into the symbol table).
+ 		 */
+-		indirect_symtab = (unsigned long *)(cur_obj->obj_addr +
++		indirect_symtab = (uint32_t *)(cur_obj->obj_addr +
+ 					    cur_obj->dysymtab->indirectsymoff);
+ 		stride = 4;
+ 		if(indirect_symtab[from_map->s->reserved1 + from_offset /
+@@ -1462,7 +1462,7 @@
+ 		 * case we check for the same indirect symbol table entry
+ 		 * (that is the same index into the symbol table).
+ 		 */
+-		indirect_symtab = (unsigned long *)(cur_obj->obj_addr +
++		indirect_symtab = (uint32_t *)(cur_obj->obj_addr +
+ 					    cur_obj->dysymtab->indirectsymoff);
+ 		stride = (arch_flag.cputype == CPU_TYPE_POWERPC64 ? 8 : 4);
+ 		if(indirect_symtab[from_map->s->reserved1 + from_offset /
+--- a/ld/layout.c
++++ b/ld/layout.c
+@@ -441,7 +441,7 @@
+ 	output_symtab_info.symtab_command.nsyms = nmerged_symbols;
+ 	output_symtab_info.symtab_command.strsize =
+ 	    rnd(merged_string_size + STRING_SIZE_OFFSET,
+-		  sizeof(unsigned long));
++		  sizeof(uint32_t));
+ 	output_symtab_info.output_strpad =
+ 	    output_symtab_info.symtab_command.strsize -
+ 	    (merged_string_size + STRING_SIZE_OFFSET);
+@@ -749,7 +749,7 @@
+ 				sizeof(struct dylib_reference);
+ 		    if(nindirectsyms != 0)
+ 			linkedit_segment.sg.filesize +=
+-			    nindirectsyms * sizeof(unsigned long);
++			    nindirectsyms * sizeof(uint32_t);
+ 		    if(strip_level != STRIP_ALL)
+ 			linkedit_segment.sg.filesize +=
+ 			    (nmerged_symbols
+@@ -760,7 +760,7 @@
+ 			    rnd(merged_string_size +
+ 				  local_string_size +
+ 				  STRING_SIZE_OFFSET,
+-				  sizeof(unsigned long));
++				  sizeof(uint32_t));
+ 		    else
+ 			warning("segment created for -seglinkedit zero size "
+ 			        "(output file stripped)");
+@@ -1141,7 +1141,7 @@
+ 		rnd(merged_string_size +
+ 		      local_string_size +
+ 		      STRING_SIZE_OFFSET,
+-		      sizeof(unsigned long));
++		      sizeof(uint32_t));
+ 	    output_symtab_info.output_strpad =
+ 		output_symtab_info.symtab_command.strsize -
+ 		(merged_string_size + local_string_size + STRING_SIZE_OFFSET);
+@@ -1210,14 +1210,14 @@
+ 	if(output_thread_info.thread_in_output == TRUE){
+ 	    output_thread_info.thread_command.cmdsize =
+ 						sizeof(struct thread_command) +
+-						2 * sizeof(long);
++						2 * sizeof(uint32_t);
+ 	    if(arch_flag.cputype == CPU_TYPE_MC680x0){
+ 		output_thread_info.flavor = M68K_THREAD_STATE_REGS;
+ 		output_thread_info.count = M68K_THREAD_STATE_REGS_COUNT;
+ 		output_thread_info.entry_point = &(mc680x0.pc);
+ 		output_thread_info.stack_pointer = &(mc680x0.areg[7]);
+ 		output_thread_info.state = &mc680x0;
+-		output_thread_info.thread_command.cmdsize += sizeof(long) *
++		output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 					    M68K_THREAD_STATE_REGS_COUNT;
+ 	    }
+ 	    else if(arch_flag.cputype == CPU_TYPE_POWERPC ||
+@@ -1227,7 +1227,7 @@
+ 		output_thread_info.entry_point = (int *)&(powerpc.srr0);
+ 		output_thread_info.stack_pointer = (int *)&(powerpc.r1);
+ 		output_thread_info.state = &powerpc;
+-		output_thread_info.thread_command.cmdsize += sizeof(long) *
++		output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 					    PPC_THREAD_STATE_COUNT;
+ 	    }
+ 	    else if(arch_flag.cputype == CPU_TYPE_MC88000){
+@@ -1236,7 +1236,7 @@
+ 		output_thread_info.entry_point = (int *)&(mc88000.xip);
+ 		output_thread_info.stack_pointer = (int *)&(mc88000.r31);
+ 		output_thread_info.state = &mc88000;
+-		output_thread_info.thread_command.cmdsize += sizeof(long) *
++		output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 					    M88K_THREAD_STATE_GRF_COUNT;
+ 	    }
+ 	    else if(arch_flag.cputype == CPU_TYPE_I860){
+@@ -1245,7 +1245,7 @@
+ 		output_thread_info.entry_point = &(i860.pc);
+ 		output_thread_info.stack_pointer = &(i860.ireg[0]);
+ 		output_thread_info.state = &i860;
+-		output_thread_info.thread_command.cmdsize += sizeof(long) *
++		output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 					  I860_THREAD_STATE_REGS_COUNT;
+ 	    }
+ 	    else if(arch_flag.cputype == CPU_TYPE_I386){
+@@ -1258,7 +1258,7 @@
+ 		intel386.ss = 0x17;
+ 		intel386.cs = 0x0f;
+ 		output_thread_info.state = &intel386;
+-		output_thread_info.thread_command.cmdsize += sizeof(long) *
++		output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 					    i386_THREAD_STATE_COUNT;
+ 	    }
+ 	    else if(arch_flag.cputype == CPU_TYPE_HPPA){
+@@ -1267,7 +1267,7 @@
+ 		output_thread_info.entry_point =
+ 				(int *)&(hppa_frame_state.ts_pcoq_front);
+ 		output_thread_info.state = &hppa_frame_state;
+-		output_thread_info.thread_command.cmdsize += sizeof(long) *
++		output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 					    HPPA_FRAME_THREAD_STATE_COUNT;
+ 		if(stack_addr_specified == TRUE){
+ 		    output_thread_info.second_flavor =
+@@ -1278,8 +1278,8 @@
+ 					(int *)&(hppa_integer_state.ts_gr30);
+ 		    output_thread_info.second_state = &hppa_integer_state;
+ 		    output_thread_info.thread_command.cmdsize +=
+-				sizeof(long) * HPPA_INTEGER_THREAD_STATE_COUNT +
+-				2 * sizeof(long);
++				sizeof(uint32_t) * HPPA_INTEGER_THREAD_STATE_COUNT +
++				2 * sizeof(uint32_t);
+ 		}
+ 	    }
+ 	    else if (arch_flag.cputype == CPU_TYPE_SPARC) {
+@@ -1288,7 +1288,7 @@
+ 	      output_thread_info.entry_point = &(sparc_state.regs.r_pc);
+ 	      output_thread_info.stack_pointer = &(sparc_state.regs.r_sp);
+ 	      output_thread_info.state = &sparc_state;
+-	      output_thread_info.thread_command.cmdsize += sizeof(long) *
++	      output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 		SPARC_THREAD_STATE_REGS_COUNT;
+ 	    }
+ 	    else if (arch_flag.cputype == CPU_TYPE_ARM) {
+@@ -1297,7 +1297,7 @@
+ 	      output_thread_info.entry_point = (int *)&(arm_state.__pc);
+ 	      output_thread_info.stack_pointer = (int *)&(arm_state.__sp);
+ 	      output_thread_info.state = &arm_state;
+-	      output_thread_info.thread_command.cmdsize += sizeof(long) *
++	      output_thread_info.thread_command.cmdsize += sizeof(uint32_t) *
+ 		ARM_THREAD_STATE_COUNT;
+ 	    }
+ 	    else{
+@@ -1674,10 +1674,10 @@
+ 	 * The offsets to all the link edit structures in the file must be on
+ 	 * boundaries that they can be mapped into memory and then used as is.
+ 	 * The maximum alignment of all structures in a Mach-O file is
+-	 * sizeof(long) so the offset must be rounded to this as the sections
++	 * sizeof(uint32_t) so the offset must be rounded to this as the sections
+ 	 * and segments may not be rounded to this.
+ 	 */
+-	offset = rnd(offset, sizeof(long));
++	offset = rnd(offset, sizeof(uint32_t));
+ #ifdef RLD
+ 	/*
+ 	 * For RLD if there is any symbol table it is written past the size
+@@ -1741,7 +1741,7 @@
+ 	/* set the offset to the indirect symbol table */
+ 	if(nindirectsyms != 0){
+ 	    output_dysymtab_info.dysymtab_command.indirectsymoff = offset;
+-	    offset += nindirectsyms * sizeof(unsigned long);
++	    offset += nindirectsyms * sizeof(uint32_t);
+ 	}
+ #ifndef RLD
+ 	/* set the offset to the dylib tables */
+--- a/ld/layout.h
++++ b/ld/layout.h
+@@ -90,13 +90,13 @@
+ struct thread_info {
+     struct thread_command thread_command;
+     enum bool thread_in_output;	/* TRUE if the output file has a thread cmd */
+-    unsigned long flavor;	/* the flavor for the registers with the pc */
+-    unsigned long count;	/* the count (sizeof(long)) of the state */
++    uint32_t flavor;	/* the flavor for the registers with the pc */
++    uint32_t count;	/* the count (sizeof(uint32_t)) of the state */
+     int *entry_point;		/* pointer to the entry point in the state */
+     int *stack_pointer;		/* pointer to the stack pointer in the state */
+     void *state;		/* a pointer to a thread state */
+-    unsigned long second_flavor;/* the flavor for the registers with the sp */
+-    unsigned long second_count;	/* the count (sizeof(long)) of second_state */
++    uint32_t second_flavor;/* the flavor for the registers with the sp */
++    uint32_t second_count;	/* the count (sizeof(uint32_t)) of second_state */
+     void *second_state;		/* a pointer to the second thread state */
+ };
+ __private_extern__ struct thread_info output_thread_info;
+--- a/ld/ld.c
++++ b/ld/ld.c
+@@ -1,3 +1,5 @@
++#include <mach/mach.h>
++kern_return_t map_fd(int, vm_offset_t, vm_offset_t *, boolean_t, vm_size_t);
+ /*
+  * Copyright (c) 1999-2003 Apple Computer, Inc.  All Rights Reserved.
+  *
+--- a/ld/literal_pointers.c
++++ b/ld/literal_pointers.c
+@@ -1199,7 +1199,7 @@
+ struct merged_section *ms)
+ {
+     unsigned long i;
+-    long *output_pointer;
++    int32_t *output_pointer;
+     struct literal_pointer_block **p, *literal_pointer_block;
+     struct literal_pointer *literal_pointers;
+ 
+@@ -1212,7 +1212,7 @@
+ 	/*
+ 	 * Put the literal pointers into the output file.
+ 	 */
+-	output_pointer = (long *)(output_addr + ms->s.offset);
++	output_pointer = (int32_t *)(output_addr + ms->s.offset);
+ 	for(p = &(data->literal_pointer_blocks);
+ 	    *p ;
+ 	    p = &(literal_pointer_block->next)){
+--- a/ld/objects.c
++++ b/ld/objects.c
+@@ -671,7 +671,7 @@
+     struct fine_reloc *fine_reloc;
+     struct merged_symbol *merged_symbol;
+     unsigned long index;
+-    unsigned long *indirect_symtab;
++    uint32_t *indirect_symtab;
+     struct nlist *nlists;
+     struct section_map *section_map;
+ 
+@@ -687,7 +687,7 @@
+ 		     S_NON_LAZY_SYMBOL_POINTERS ||
+ 	    	    (map->s->flags & SECTION_TYPE) ==
+ 		     S_LAZY_SYMBOL_POINTERS){
+-		indirect_symtab = (unsigned long *)(cur_obj->obj_addr +
++		indirect_symtab = (uint32_t *)(cur_obj->obj_addr +
+ 					    cur_obj->dysymtab->indirectsymoff);
+ 		index = indirect_symtab[map->s->reserved1 + 
+ 			(fine_reloc->input_offset / 4)];
+--- a/ld/pass1.c
++++ b/ld/pass1.c
+@@ -1,3 +1,5 @@
++#include <mach/mach.h>
++kern_return_t map_fd(int, vm_offset_t, vm_offset_t *, boolean_t, vm_size_t);
+ /*
+  * Copyright (c) 1999-2006 Apple Computer, Inc. All rights reserved.
+  *
+@@ -1312,7 +1314,7 @@
+ 	 * number of bytes of strings which follow and then the strings
+ 	 * themselves.  So the smallest valid size is two words long.
+ 	 */
+-	if(symdef_length < 2 * sizeof(long)){
++	if(symdef_length < 2 * sizeof(uint32_t)){
+ 	    error("size of table of contents for archive: %s too small to be "
+ 		  "a valid table of contents (can't load from it)", file_name);
+ 	    return;
+@@ -1324,11 +1326,11 @@
+ 	    return;
+ 	}
+ 	toc_byte_sex = ld_get_toc_byte_sex(file_addr, file_size);
+-	nranlibs = *((long *)(file_addr + offset));
++	nranlibs = *((uint32_t *)(file_addr + offset));
+ 	if(toc_byte_sex != host_byte_sex)
+ 	    nranlibs = SWAP_LONG(nranlibs);
+ 	nranlibs = nranlibs / sizeof(struct ranlib);
+-	offset += sizeof(long);
++	offset += sizeof(uint32_t);
+ 	ranlibs = (struct ranlib *)(file_addr + offset);
+ 	offset += sizeof(struct ranlib) * nranlibs;
+ 	if(nranlibs == 0){
+@@ -1336,27 +1338,27 @@
+ 		    file_name);
+ 	    return;
+ 	}
+-	if(offset - (2 * sizeof(long) + ar_name_size + sizeof(struct ar_hdr) +
++	if(offset - (2 * sizeof(uint32_t) + ar_name_size + sizeof(struct ar_hdr) +
+ 		     SARMAG) > symdef_length){
+ 	    error("truncated or malformed archive: %s (ranlib structures in "
+ 		  "table of contents extends past the end of the table of "
+ 		  "contents, can't load from it)", file_name);
+ 	    return;
+ 	}
+-	string_size = *((long *)(file_addr + offset));
++	string_size = *((uint32_t *)(file_addr + offset));
+ 	if(toc_byte_sex != host_byte_sex)
+ 	    string_size = SWAP_LONG(string_size);
+-	offset += sizeof(long);
++	offset += sizeof(uint32_t);
+ 	bsearch_strings = file_addr + offset;
+ 	offset += string_size;
+-	if(offset - (2 * sizeof(long) + ar_name_size + sizeof(struct ar_hdr) +
++	if(offset - (2 * sizeof(uint32_t) + ar_name_size + sizeof(struct ar_hdr) +
+ 		     SARMAG) > symdef_length){
+ 	    error("truncated or malformed archive: %s (ranlib strings in "
+ 		  "table of contents extends past the end of the table of "
+ 		  "contents, can't load from it)", file_name);
+ 	    return;
+ 	}
+-	if(symdef_length == 2 * sizeof(long)){
++	if(symdef_length == 2 * sizeof(uint32_t)){
+ 	    warning("empty table of contents for archive: %s (can't load from "
+ 		    "it)", file_name);
+ 	    return;
+@@ -1395,10 +1397,10 @@
+ 		return;
+ 	    }
+ #else
+-	    if(ranlibs[i].ran_off % sizeof(long) != 0){
++	    if(ranlibs[i].ran_off % sizeof(uint32_t) != 0){
+ 		error("malformed table of contents in: %s (ranlib struct %lu "
+ 		      "library member offset not a multiple of %lu bytes, can't"
+-		      " load from it)", file_name, i, sizeof(long));
++		      " load from it)", file_name, i, sizeof(uint32_t));
+ 		return;
+ 	    }
+ #endif
+@@ -1411,7 +1413,7 @@
+ 	 * ".objc_category_name".
+  	 */
+ 	if(archive_ObjC == TRUE){
+-	    loaded_offsets = allocate(nranlibs * sizeof(unsigned long));
++	    loaded_offsets = allocate(nranlibs * sizeof(*loaded_offsets));
+ 	    nloaded_offsets = 0;
+ 	    for(i = 0; i < nranlibs; i++){
+ 		/* See if this symbol is an objective-C symbol */
+@@ -2431,8 +2433,8 @@
+ 			if(nmodules < 64)
+ 			    nmodules = 64;
+ 			size = sizeof(struct prebound_dylib_command) +
+-			       rnd(strlen(p->dylib_name) + 1, sizeof(long)) +
+-			       rnd(nmodules / 8, sizeof(long));
++			       rnd(strlen(p->dylib_name) + 1, sizeof(uint32_t)) +
++			       rnd(nmodules / 8, sizeof(uint32_t));
+ 			p->pbdylib = allocate(size);
+ 			memset(p->pbdylib, '\0', size);
+ 			p->pbdylib->cmd = LC_PREBOUND_DYLIB;
+@@ -2446,10 +2448,10 @@
+ 				p->definition_obj->dysymtab->nmodtab;
+ 			p->pbdylib->linked_modules.offset =
+ 				sizeof(struct prebound_dylib_command) +
+-				rnd(strlen(p->dylib_name) + 1, sizeof(long));
++				rnd(strlen(p->dylib_name) + 1, sizeof(uint32_t));
+ 			p->linked_modules = ((char *)p->pbdylib) +
+ 				sizeof(struct prebound_dylib_command) +
+-				rnd(strlen(p->dylib_name) + 1, sizeof(long));
++				rnd(strlen(p->dylib_name) + 1, sizeof(uint32_t));
+ 		    }
+ 		}
+ 	    }
+@@ -4514,9 +4516,9 @@
+ 	    l = *lc;
+ 	    if(cur_obj->swapped)
+ 		swap_load_command(&l, host_byte_sex);
+-	    if(l.cmdsize % sizeof(long) != 0){
++	    if(l.cmdsize % sizeof(uint32_t) != 0){
+ 		error_with_cur_obj("load command %lu size not a multiple of "
+-				   "sizeof(long)", i);
++				   "sizeof(uint32_t)", i);
+ 		return;
+ 	    }
+ 	    if(l.cmdsize <= 0){
+@@ -4552,7 +4554,7 @@
+ 		    cur_obj->fvmlib_stuff = TRUE;
+ 		    break;
+ 		}
+-		check_size_offset(sg->filesize, sg->fileoff, sizeof(long),
++		check_size_offset(sg->filesize, sg->fileoff, sizeof(uint32_t),
+ 				  "filesize", "fileoff", i);
+ 		if(errors)
+ 		    return;
+@@ -4697,7 +4699,7 @@
+ 			}
+ 			else{
+ 			    check_size_offset_sect(s->nreloc * sizeof(struct
+-				 relocation_info), s->reloff, sizeof(long),
++				 relocation_info), s->reloff, sizeof(uint32_t),
+ 				 "nreloc * sizeof(struct relocation_info)",
+ 				 "reloff", i, j, s->segname, s->sectname);
+ 			    if(errors)
+@@ -4730,11 +4732,11 @@
+ 		    return;
+ 		}
+ 		check_size_offset(st->nsyms * sizeof(struct nlist), st->symoff,
+-				  sizeof(long), "nsyms * sizeof(struct nlist)",
++				  sizeof(uint32_t), "nsyms * sizeof(struct nlist)",
+ 				  "symoff", i);
+ 		if(errors)
+ 		    return;
+-		check_size_offset(st->strsize, st->stroff, sizeof(long),
++		check_size_offset(st->strsize, st->stroff, sizeof(uint32_t),
+ 				  "strsize", "stroff", i);
+ 		if(errors)
+ 		    return;
+@@ -4757,7 +4759,7 @@
+ 		}
+ 		check_size_offset(dyst->ntoc *
+ 				  sizeof(struct dylib_table_of_contents),
+-				  dyst->tocoff, sizeof(long),
++				  dyst->tocoff, sizeof(uint32_t),
+ 				"ntoc * sizeof(struct dylib_table_of_contents)",
+ 				"tocoff", i);
+ 		if(dyst->ntoc == 0 && cur_obj->dylib == TRUE &&
+@@ -4768,32 +4770,32 @@
+ 		if(errors)
+ 		    return;
+ 		check_size_offset(dyst->nmodtab * sizeof(struct dylib_module),
+-				  dyst->modtaboff, sizeof(long),
++				  dyst->modtaboff, sizeof(uint32_t),
+ 				  "nmodtab * sizeof(struct dylib_module)",
+ 				  "modtaboff", i);
+ 		if(errors)
+ 		    return;
+ 		check_size_offset(dyst->nextrefsyms *
+ 				  sizeof(struct dylib_reference),
+-				  dyst->extrefsymoff, sizeof(long),
++				  dyst->extrefsymoff, sizeof(uint32_t),
+ 				 "nextrefsyms * sizeof(struct dylib_reference)",
+ 				 "extrefsymoff", i);
+ 		if(errors)
+ 		    return;
+-		check_size_offset(dyst->nindirectsyms * sizeof(long),
+-				  dyst->indirectsymoff, sizeof(long),
+-				  "nindirectsyms * sizeof(long)",
++		check_size_offset(dyst->nindirectsyms * sizeof(uint32_t),
++				  dyst->indirectsymoff, sizeof(uint32_t),
++				  "nindirectsyms * sizeof(uint32_t)",
+ 				  "indirectsymoff", i);
+ 		if(errors)
+ 		    return;
+ 		check_size_offset(dyst->nextrel *sizeof(struct relocation_info),
+-				  dyst->extreloff, sizeof(long),
++				  dyst->extreloff, sizeof(uint32_t),
+ 				  "nextrel * sizeof(struct relocation_info)",
+ 				  "extreloff", i);
+ 		if(errors)
+ 		    return;
+ 		check_size_offset(dyst->nlocrel *sizeof(struct relocation_info),
+-				  dyst->locreloff, sizeof(long),
++				  dyst->locreloff, sizeof(uint32_t),
+ 				  "nlocrel * sizeof(struct relocation_info)",
+ 				  "locreloff", i);
+ 		if(errors)
+@@ -5232,7 +5234,7 @@
+ 		    return;
+ 		}
+ 		check_size_offset(hints->nhints * sizeof(struct twolevel_hint),
+-				  hints->offset, sizeof(long),
++				  hints->offset, sizeof(uint32_t),
+ 				  "nhints * sizeof(struct twolevel_hint)",
+ 				  "offset", i);
+ 		if(errors)
+@@ -5603,9 +5605,9 @@
+ 	dyst = NULL;
+ 	lc = load_commands;
+ 	for(i = 0; i < mh->ncmds; i++){
+-	    if(lc->cmdsize % sizeof(long) != 0){
++	    if(lc->cmdsize % sizeof(uint32_t) != 0){
+ 		error_with_cur_obj("load command %lu size not a multiple of "
+-				   "sizeof(long)", i);
++				   "sizeof(uint32_t)", i);
+ 		return;
+ 	    }
+ 	    if(lc->cmdsize <= 0){
+--- a/ld/pass2.c
++++ b/ld/pass2.c
+@@ -577,7 +577,7 @@
+ 			     dysymtab_command.indirectsymoff - offset);
+ 	    offset = output_dysymtab_info.dysymtab_command.indirectsymoff +
+ 		     output_dysymtab_info.dysymtab_command.nindirectsyms *
+-							sizeof(unsigned long);
++							sizeof(uint32_t);
+ 	}
+ #ifndef RLD
+ 	/* the offset to the dylib table of contents */
+@@ -1231,33 +1231,33 @@
+ 	    header_offset += sizeof(struct thread_command);
+ 	    /* the flavor of the thread state */
+ 	    memcpy(output_addr + header_offset, &(output_thread_info.flavor),
+-		   sizeof(long));
+-	    header_offset += sizeof(long);
++		   sizeof(uint32_t));
++	    header_offset += sizeof(uint32_t);
+ 	    /* the count of longs of the thread state */
+ 	    memcpy(output_addr + header_offset, &(output_thread_info.count),
+-		   sizeof(long));
+-	    header_offset += sizeof(long);
++		   sizeof(uint32_t));
++	    header_offset += sizeof(uint32_t);
+ 	    /* the thread state */
+ 	    memcpy(output_addr + header_offset, output_thread_info.state,
+-		   output_thread_info.count * sizeof(long));
+-	    header_offset += output_thread_info.count * sizeof(long);
++		   output_thread_info.count * sizeof(uint32_t));
++	    header_offset += output_thread_info.count * sizeof(uint32_t);
+ 	    /* the second thread state if any */
+ 	    if(output_thread_info.second_count != 0){
+ 		/* the flavor of the second thread state */
+ 		memcpy(output_addr + header_offset,
+ 		       &(output_thread_info.second_flavor),
+-		       sizeof(long));
+-		header_offset += sizeof(long);
++		       sizeof(uint32_t));
++		header_offset += sizeof(uint32_t);
+ 		/* the count of longs of the second thread state */
+ 		memcpy(output_addr + header_offset,
+ 		       &(output_thread_info.second_count),
+-		       sizeof(long));
+-		header_offset += sizeof(long);
++		       sizeof(uint32_t));
++		header_offset += sizeof(uint32_t);
+ 		/* the second thread state */
+ 		memcpy(output_addr + header_offset,
+ 		       output_thread_info.second_state,
+-		       output_thread_info.second_count * sizeof(long));
+-		header_offset += output_thread_info.second_count * sizeof(long);
++		       output_thread_info.second_count * sizeof(uint32_t));
++		header_offset += output_thread_info.second_count * sizeof(uint32_t);
+ 	    }
+ 	}
+ 	/* next the routines command if the output file has one */
+--- a/ld/sections.c
++++ b/ld/sections.c
+@@ -4289,7 +4289,7 @@
+ #ifndef RLD
+     unsigned long j;
+     struct nlist *nlists;
+-    unsigned long *indirect_symtab, index, value;
++    uint32_t *indirect_symtab, index, value;
+     struct undefined_map *undefined_map;
+     struct merged_symbol *merged_symbol;
+     char *strings;
+@@ -4315,7 +4315,7 @@
+ 	    /* setup pointers to the symbol table and indirect symbol table */
+ 	    nlists = (struct nlist *)(cur_obj->obj_addr +
+ 				      cur_obj->symtab->symoff);
+-	    indirect_symtab = (unsigned long *)(cur_obj->obj_addr +
++	    indirect_symtab = (uint32_t *)(cur_obj->obj_addr +
+ 					    cur_obj->dysymtab->indirectsymoff);
+ 	    strings = cur_obj->obj_addr + cur_obj->symtab->stroff;
+ 	    for(i = 0; i < map->nfine_relocs - 1; i++){
+@@ -4384,7 +4384,7 @@
+ 			    value = SWAP_LONG(value);
+ 			memcpy(output_addr + map->output_section->s.offset +
+ 			       map->fine_relocs[i].output_offset,
+-			       &value, sizeof(unsigned long));
++			       &value, sizeof(uint32_t));
+ 		    }
+ 		    else{
+ 			/*
+@@ -4429,7 +4429,7 @@
+ 				value = SWAP_LONG(value);
+ 			    memcpy(output_addr + map->output_section->s.offset +
+ 				   map->fine_relocs[i].output_offset,
+-				   &value, sizeof(unsigned long));
++				   &value, sizeof(uint32_t));
+ 			}
+ 			else{
+ 			    memcpy(output_addr + map->output_section->s.offset +
+@@ -4506,7 +4506,7 @@
+ 			value = SWAP_LONG(value);
+ 		    memcpy(output_addr + map->output_section->s.offset +
+ 			   map->fine_relocs[i].output_offset,
+-			   &value, sizeof(unsigned long));
++			   &value, sizeof(uint32_t));
+ 		}
+ 		else{
+ 		    /*
+@@ -4550,7 +4550,7 @@
+ 			    value = SWAP_LONG(value);
+ 			memcpy(output_addr + map->output_section->s.offset +
+ 			       map->fine_relocs[i].output_offset,
+-			       &value, sizeof(unsigned long));
++			       &value, sizeof(uint32_t));
+ 		    }
+ 		    else{
+ 			memcpy(output_addr + map->output_section->s.offset +
+@@ -4574,7 +4574,7 @@
+ 		map->s->reserved2 == 5){
+ 	    nlists = (struct nlist *)(cur_obj->obj_addr +
+ 				      cur_obj->symtab->symoff);
+-	    indirect_symtab = (unsigned long *)(cur_obj->obj_addr +
++	    indirect_symtab = (uint32_t *)(cur_obj->obj_addr +
+ 					    cur_obj->dysymtab->indirectsymoff);
+ 	    strings = cur_obj->obj_addr + cur_obj->symtab->stroff;
+ 	    for(i = 0; i < map->nfine_relocs; i++){
+@@ -4604,7 +4604,7 @@
+ 		    if(host_byte_sex != target_byte_sex)
+ 			delta = SWAP_LONG(delta);
+ 		    *jmpEntry = 0xE9; /* JMP rel32 */
+-		    memcpy(jmpEntry + 1, &delta, sizeof(unsigned long));
++		    memcpy(jmpEntry + 1, &delta, sizeof(uint32_t));
+ 		}
+ 	    }
+ 	}
+--- a/ld/symbols.c
++++ b/ld/symbols.c
+@@ -2939,7 +2939,7 @@
+ 		    merged_symbol = allocate(sizeof(struct merged_symbol));
+ 		    memset(merged_symbol, '\0', sizeof(struct merged_symbol));
+ 
+-		    merged_symbol->nlist = symbols[refs[j].isym];
++		    merged_symbol->nlist = merged_nlist_from_disk(symbols[refs[j].isym]);
+ 		    merged_symbol->nlist.n_un.n_name = symbol_name;
+ 		    merged_symbol->definition_object = cur_obj;
+ 		    merged_symbol->twolevel_reference = TRUE;
+@@ -3740,7 +3740,7 @@
+ 
+ 	merged_symbol = hash_pointer;
+ 	memset(merged_symbol, '\0', sizeof(struct merged_symbol));
+-	merged_symbol->nlist = *object_symbol;
++	merged_symbol->nlist = merged_nlist_from_disk(*object_symbol);
+ #ifdef RLD
+ 	if(cur_obj == base_obj && base_name == NULL)
+ 	    merged_symbol->nlist.n_un.n_name = object_strings +
+@@ -4027,7 +4027,7 @@
+ 			(merged_symbol->nlist.n_value))->nlist.n_un.n_name;
+ 	else
+ 	    indr_symbol_name = "error in trace_symbol()";
+-	trace_symbol(merged_symbol->nlist.n_un.n_name, &(merged_symbol->nlist),
++	trace_symbol(merged_symbol->nlist.n_un.n_name, MERGED_DISK_PTR(merged_symbol->nlist),
+ 		     merged_symbol->definition_object, indr_symbol_name);
+ }
+ 
+@@ -4344,7 +4344,7 @@
+ 	if((sect_spec != NULL && sect_spec->order_filename != NULL) ||
+ 	   dead_strip == TRUE){
+ 	    link_edit_common_symtab.strsize =
+-			rnd(link_edit_common_symtab.strsize, sizeof(long));
++			rnd(link_edit_common_symtab.strsize, sizeof(uint32_t));
+ 	    link_edit_common_object.obj_size =
+ 			sizeof(struct mach_header) +
+ 			link_edit_common_symtab.nsyms * sizeof(struct nlist) +
+@@ -4444,8 +4444,11 @@
+ 		     * -unexport_symbol_list option set the private extern bit
+ 		     * on the symbol if it is not to be exported.
+ 		     */
+-		    exports_list_processing(merged_symbol->nlist.n_un.n_name,
+-					    &(merged_symbol->nlist));
++		    {
++                struct nlist d = merged_nlist_to_disk(merged_symbol->nlist);
++                exports_list_processing(merged_symbol->nlist.n_un.n_name, &d);
++                merged_symbol->nlist.n_type = d.n_type;
++            }
+ 		    /*
+ 		     * If this common symbol got made into a private extern with
+ 		     * the processing of the exports list increment the count of
+@@ -5576,8 +5579,11 @@
+ 	     * -unexport_symbol_list option set the private extern bit
+ 	     * on the symbol if it is not to be exported.
+ 	     */
+-	    exports_list_processing(merged_symbol->nlist.n_un.n_name,
+-				    &(merged_symbol->nlist));
++	    {
++                struct nlist d = merged_nlist_to_disk(merged_symbol->nlist);
++                exports_list_processing(merged_symbol->nlist.n_un.n_name, &d);
++                merged_symbol->nlist.n_type = d.n_type;
++            }
+ 	    /*
+ 	     * If this symbol got made into a private extern with the processing
+ 	     * of the exports list increment the count of private exterals.
+@@ -5742,8 +5748,12 @@
+ 	    merged_symbol_list = merged_symbol_list->next){
+ 	    for(i = 0; i < merged_symbol_list->used; i++){
+ 		merged_symbol = merged_symbol_list->symbols[i];
+-		relocate_symbol(&(merged_symbol->nlist),
+-				merged_symbol->definition_object);
++		if ((merged_symbol->nlist.n_type & N_TYPE) == N_SECT) {
++                struct nlist d = merged_nlist_to_disk(merged_symbol->nlist);
++                relocate_symbol(&d, merged_symbol->definition_object);
++                merged_symbol->nlist.n_value = d.n_value;
++                merged_symbol->nlist.n_sect = d.n_sect;
++            }
+ 	    }
+ 	}
+ 	/*
+@@ -6541,7 +6551,7 @@
+ 		symbol_index = (output_symtab_info.output_merged_strsize
+ 				+ (merged_symbol_string_index
+ 				   (hash_pointer->nlist.n_un.n_name)));
+-		add_dwarf_map_for_sym (&hash_pointer->nlist, i, debug_ptr,
++		add_dwarf_map_for_sym (MERGED_DISK_PTR(hash_pointer->nlist), i, debug_ptr,
+ 				       symbol_index, object_symbols[i].n_sect,
+ 				       &nlist, &output_nsyms);
+ 	      }
+@@ -7014,7 +7024,7 @@
+ 			merged_symbol->definition_object->iprivatesym++;
+ 			nlist = (struct nlist *)(output_addr +
+ 						 flush_symbol_offset);
+-			*nlist = merged_symbol->nlist;
++			*nlist = merged_nlist_to_disk(merged_symbol->nlist);
+ 			/*
+ 			 * Since this is a symbol definition make sure the
+ 			 * weak reference bit is off.
+@@ -7067,7 +7077,7 @@
+ 	nlist = (struct nlist *)(output_addr + flush_symbol_offset);
+ 	for(i = 0; i < output_dysymtab_info.dysymtab_command.nextdefsym; i++){
+ 	    merged_symbol = extdefsyms_order[i];
+-	    *nlist = merged_symbol->nlist;
++	    *nlist = merged_nlist_to_disk(merged_symbol->nlist);
+ 	    /*
+ 	     * Since this is a symbol definition make sure the weak reference
+ 	     * bit is off.
+@@ -7131,7 +7141,7 @@
+ 	nlist = (struct nlist *)(output_addr + flush_symbol_offset);
+ 	for(i = 0; i < output_dysymtab_info.dysymtab_command.nundefsym; i++){
+ 	    merged_symbol = undefsyms_order[i];
+-	    *nlist = merged_symbol->nlist;
++	    *nlist = merged_nlist_to_disk(merged_symbol->nlist);
+ 	    /*
+ 	     * Since this is an undefined symbol make sure the weak definition
+ 	     * bit and N_NO_DEAD_STRIP bits are off.
+@@ -7256,7 +7266,7 @@
+ 		merged_symbol = merged_symbol_list->symbols[i];
+ 		if(merged_symbol->definition_object->set_num != cur_set)
+ 		    continue;
+-		*nlist = merged_symbol->nlist;
++		*nlist = merged_nlist_to_disk(merged_symbol->nlist);
+ 		nlist->n_un.n_strx = output_symtab_info.output_merged_strsize +
+ 				     merged_symbol_string_index(
+ 					merged_symbol->nlist.n_un.n_name);
+@@ -8253,8 +8263,9 @@
+ const struct merged_symbol **ms1,
+ const struct merged_symbol **ms2)
+ {
+-	return((int)((*ms1)->definition_object) -
+-	       (int)((*ms2)->definition_object));
++	uintptr_t a = (uintptr_t)(*ms1)->definition_object;
++    uintptr_t b = (uintptr_t)(*ms2)->definition_object;
++    return (a > b) - (a < b);
+ }
+ 
+ /*
+--- a/ld/symbols.h
++++ b/ld/symbols.h
+@@ -53,8 +53,34 @@
+  *				merged_symbol that it is an indirect for.
+  *	
+  */
++/* In-core symbols may contain host pointers. Never serialize this type. */
++struct merged_nlist {
++    union { char *n_name; uint32_t n_strx; } n_un;
++    uint8_t n_type, n_sect;
++    int16_t n_desc;
++    uintptr_t n_value;
++};
++static inline struct nlist
++merged_nlist_to_disk(struct merged_nlist s)
++{
++    struct nlist d;
++    d.n_un.n_strx = s.n_un.n_strx;
++    d.n_type = s.n_type; d.n_sect = s.n_sect;
++    d.n_desc = s.n_desc; d.n_value = s.n_value;
++    return d;
++}
++static inline struct merged_nlist
++merged_nlist_from_disk(struct nlist d)
++{
++    struct merged_nlist s = {0};
++    s.n_un.n_strx = d.n_un.n_strx;
++    s.n_type = d.n_type; s.n_sect = d.n_sect;
++    s.n_desc = d.n_desc; s.n_value = d.n_value;
++    return s;
++}
++#define MERGED_DISK_PTR(s) ((struct nlist[]){merged_nlist_to_disk(s)})
+ struct merged_symbol {
+-    struct nlist nlist;		/* the nlist structure of this merged symbol */
++    struct merged_nlist nlist;		/* the nlist structure of this merged symbol */
+     unsigned long name_len;	/* the size of the symbol name */
+     struct object_file		/* pointer to the object file this symbol is */
+ 	*definition_object;	/*  defined in */
+@@ -348,7 +374,7 @@
+  * this amount.  Also these first bytes are zero so that if the special case of
+  * a zero index is not handled by a program it will happen to work.
+  */
+-#define STRING_SIZE_OFFSET (sizeof(long))
++#define STRING_SIZE_OFFSET (sizeof(uint32_t))
+ 
+ __private_extern__ void merge_symbols(
+     void);

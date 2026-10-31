@@ -1,2 +1,3 @@
 0001-linux-host-and-explicit-target-tools.patch
 0002-zero-library-id-object-padding.patch
+0003-keep-symbol-names-out-of-disk-nlists-on-lp64.patch

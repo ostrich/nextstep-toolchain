@@ -2,6 +2,14 @@
 #ifndef NEXTSTEP_CCTOOLS_HOST_H
 #define NEXTSTEP_CCTOOLS_HOST_H
 #define _GNU_SOURCE 1
+/* Historical Mach headers use Apple's arm64 spelling. */
+#if defined(__aarch64__) && !defined(__arm64__)
+#define __arm64__ 1
+#endif
+#include <errno.h>
+#ifndef EFTYPE
+#define EFTYPE EINVAL
+#endif
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>

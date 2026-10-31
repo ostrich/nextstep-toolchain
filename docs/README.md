@@ -4,6 +4,7 @@ Start with the [project README](../README.md) for SDK setup, compilation and
 source builds, or [PORTING](../PORTING.md) for application workflows.
 
 - [Build and test the C++ toolchain](cxx-toolchain.md)
+- [Linux host architectures](linux-hosts.md)
 - [Development and release workflow](toolchain-workflow.md)
 - [GCC patch overview](../patches/README.md)
 - [Original target ABI evidence](architecture-evidence.md)

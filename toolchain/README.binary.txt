@@ -8,11 +8,10 @@ tools and the modern static C++ runtime. It does not run on NEXTSTEP itself.
 Host requirements
 -----------------
 
-This low-level staging template requires x86-64 Linux, Python 3.11+, glibc
-with 32-bit library support, ISL, MPC, MPFR, GMP and Zstandard. The portable
-release bundles those host libraries; follow its root README instead. The classic Mach-O tools are 32-bit Linux executables.
-The compiler frontends are 64-bit Linux executables. Host libraries must
-provide the versions required by these binaries.
+This low-level staging template requires matching 64-bit Linux host libraries,
+Python 3.11+, glibc, ISL, MPC, MPFR, GMP and Zstandard. Host programs are built
+natively for x86-64 or arm64. The portable release bundles those libraries;
+follow its root README instead. NEXTSTEP output remains 32-bit Mach-O.
 
 Provide your own private NEXTSTEP 3.3 SDK, containing lib/ and usr/include/.
 No original SDK, system library or VM image is included in this bundle.

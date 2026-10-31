@@ -35,7 +35,9 @@ visual Installer walkthrough.
 These are toolchain release checks, not exhaustive compiler conformance or a
 promise that an arbitrary application will compile unchanged. Programs still
 need target-side testing. Physical hardware and a range of Linux distributions
-were not separately qualified. The host kernel needs 32-bit x86 execution support.
+were not separately qualified. The original x86-64 revision 1 bundle needs
+32-bit x86 execution support; the native 64-bit host builds described below
+remove that requirement.
 
 The release records its source commit and a code fingerprint in
 share/distribution.json. Its code matches the guest-tested bundle, comparing
@@ -68,3 +70,37 @@ and runtime bytes. The current builder passes 24 host tests and produces a
 byte-identical copy of the example package qualified through native installation,
 execution, receipt verification and removal. Documentation-only updates do not
 constitute additional compiler or guest qualification.
+
+## Native 64-bit Linux hosts
+
+The classic Mach-O tools and fixed-VM constructor build as native x86-64 and
+arm64 Linux programs using the same maintained patches. Host pointers remain
+separate from serialized 32-bit symbol records, literal pools, indirect-symbol
+tables, relocation words, archive fields and thread commands. The legacy
+32-bit x86 build remains available as a reference control.
+
+The arm64 GCC executables were cross-built in a Debian 13 environment and
+executed inside a Debian 13 arm64 QEMU VM. The target headers and runtime
+archives were reused from the qualified bundle without changing their bytes.
+This host port did not repeat the complete earlier compiler campaigns.
+
+Both hosts produced byte-identical executables for 16 thin and four fat
+C, C++, Objective-C and Objective-C++ cases, including C++ threads, atomics and
+exceptions. Their example installer packages were also byte-identical.
+The arm64 package builder passed all 24 host tests. Classic-tool checks
+compared literal pools, indirect symbols, relocation-adjacent bytes and
+selective archive links against outputs from the original 32-bit tools.
+Archive and BSS checks also ran in the arm64 VM. The x86-64 control covered
+strip, startup tables, ordered linking, driver outputs, shared-library data
+slots and dependency graphs.
+
+Developer-CD SDK extraction and four-target compile/link checks passed in
+the arm64 VM. The generated example package installed, executed, verified and
+uninstalled in a disposable Intel OPENSTEP 4.2 guest. Four additional Intel
+language probes, including C++ threads and exceptions, ran successfully. That
+guest halted natively and passed a stopped filesystem check. Package testing
+used the maintained command-line installer and receipt utility, not the GUI.
+Both host bundles passed relocation into paths containing spaces. Release
+audits require every host ELF image to use the declared 64-bit architecture,
+verify command executable bits and reject private paths and SDK contents.
+These checks do not extend OPENSTEP runtime qualification to SPARC or m68k.

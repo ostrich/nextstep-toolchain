@@ -12,6 +12,8 @@ def digest(p):
     with p.open('rb') as f:
         return hashlib.file_digest(f, 'sha256').hexdigest()
 p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--cc', default='clang')
+p.add_argument('--host-abi', choices=['i386', 'native'], default='native')
 p.add_argument('--host-build', type=Path, default=ROOT/'work/host-tools-cxx-bss')
 p.add_argument('--output', type=Path, default=ROOT/'work/build/shared-tools')
 p.add_argument('--source-cache', type=Path, help='Optional local repository containing the pinned upstream commit')
@@ -53,7 +55,8 @@ for patch in patches:
 # supplies mkshlib, which Apple removed from later releases.
 headers=host/'source/include'
 foreign=ROOT/'work/host-source-headers/cctools/include/foreign'
-flags=['clang','-m32','-std=gnu11','-O2','-g0','-ffile-prefix-map='+str(ROOT)+'=SOURCE','-fcommon','-Dround=shlib_round',
+abi_flags=['-m32'] if a.host_abi == 'i386' else []
+flags=[a.cc,*abi_flags,'-std=gnu11','-O2','-g0','-ffile-prefix-map='+str(ROOT)+'=SOURCE','-fcommon','-Dround=shlib_round',
        '-Wno-deprecated-declarations','-Werror=implicit-function-declaration',
        '-Werror=int-conversion','-Werror=incompatible-pointer-types','-Wno-format',
        '-Wno-constant-conversion','-DNEXTSTEP_CCTOOLS','-D_DARWIN_C_SOURCE',
@@ -72,7 +75,7 @@ objects=[]
 for name in ['mkshlib/mkshlib.c','mkshlib/target.c','mkshlib/host.c','mkshlib/errors.c','mkshlib/parse_spec.c','libstuff/round.c']:
     obj=b/(Path(name).stem+'.o');run(flags+['-c',s/name,'-o',obj]);objects.append(obj)
 (b/'bin').mkdir()
-run(['clang','-m32','-o',b/'bin/mkshlib',*objects,host/'libstuff.a'])
+run([a.cc,*abi_flags,'-o',b/'bin/mkshlib',*objects,host/'libstuff.a'])
 record={'schema':1,'status':'passed','sources':lock,'patches_sha256':{p.name:digest(p) for p in patches},
         'host_build_record_sha256':digest(host/'build-record.json'),
         'host_support_sha256':digest(host/'libstuff.a'),'steps':steps,

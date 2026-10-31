@@ -7,8 +7,9 @@ subject to the APIs used. Intel is tested; SPARC and m68k are expected to work
 but have not been tested.
 
 Extract the binary download anywhere. Python 3.11+ is required. No root access,
-system toolchain installation or system multilib setup is needed. The Linux
-kernel must support 32-bit x86 execution for the classic Mach-O tools.
+system toolchain installation or system multilib setup is needed. Native
+64-bit builds support Linux x86-64 and arm64. Older x86-64 revision 1 archives
+require kernel support for 32-bit x86 execution.
 The usage below describes the binary archive. This source checkout contains
 the build scripts; see the local source-build instructions below.
 
@@ -76,9 +77,9 @@ Builds and release uploads are local; there is no GitHub Actions workflow.
 
 ## Build from source locally
 
-Building from source requires a C/C++ host compiler, Clang with 32-bit
-development support, Make, Git, patch, Bison, Flex, Texinfo, Python 3.11+, binutils and development
-libraries for GMP, MPFR, MPC, ISL and Zstandard. Use a source checkout without
+Building from source requires a C/C++ host compiler, Clang, Make, Git, patch,
+Bison, Flex, Texinfo, Python 3.11+, binutils and development libraries for GMP,
+MPFR, MPC, ISL, Zstandard, zlib and UUID. Use a source checkout without
 spaces; the resulting download supports relocation into paths with spaces.
 
 Bootstrap a private SDK before the first compiler is available:
