@@ -24,22 +24,35 @@ changes only into a fresh stage, then test and regenerate the integrity
 manifest. Never change a qualified bundle in place. Follow the
 [toolchain workflow](toolchain-workflow.md).
 
-## Independent use
+## SDK preparation and future native builds
 
-Preserve the option to distribute and use NextStepCompat independently of this
-toolchain. Its current build and header integration depend on the NeXT compiler
-bundle and its SDK preparation; another compiler has not been qualified.
+NextStepCompat owns application APIs, corrected library behavior, public
+compatibility declarations and symbol redirects. The toolchain's
+`tools/prepare-sdk.py` owns syntax repairs needed to compile original SDK
+headers with modern GCC. It generates private copies; it does not modify or
+distribute the original SDK.
 
-Header cleanup must not turn SDK adaptation into an exclusively toolchain-owned
-prerequisite. Any shared SDK repairs or feature-selection policy should remain
-reusable with the component. The toolchain can invoke that support automatically,
-while a future standalone build can invoke it explicitly against a user-supplied
-SDK. Keep compiler arithmetic, exception handling and compiler TLS support in the
-compiler runtime, with their requirements documented separately.
+Keep the option of porting NextStepCompat to the original NeXT compiler.
+That configuration would use the original SDK with the component's API headers
+and must not require modern-compiler SDK preparation. The full component still
+contains compiler-specific constructs and has not been qualified with the
+native compiler. This cleanup does not claim to complete that port.
 
-This is a design constraint, not a commitment to support other compilers now.
-Preserve the native ABI and keep compiler-specific assumptions identifiable so
-future decoupling can be qualified without redesigning the library interfaces.
+Two small component-owned headers keep common behavior in one place:
+`ns33-feature-profile.h` selects the user-space POSIX profile, and
+`ns33-fdset.h` corrects FD_ZERO using standard C memset. Neither requires the
+SDK preparer or modern GCC builtins. The preparer copies these headers into its
+private overlay so qualified SDK includes use the same implementation.
+Compiler-macro normalization and modern signal-handler syntax remain in SDK
+preparation. Runtime API additions remain in NextStepCompat. The shared
+profile leaves KERNEL builds unchanged, but the complete compatibility layer
+is intended for user-space applications and is not qualified kernel support.
+
+The current modern-toolchain build and update helpers check that the installed
+SDK preparer supports these headers before creating output or changing the
+bundle. Update those paired components together in a fresh stage. Native
+compiler support remains a future qualification task. Compiler arithmetic,
+exception handling and compiler TLS support remain separate runtime concerns.
 
 ## Contracts and coverage
 

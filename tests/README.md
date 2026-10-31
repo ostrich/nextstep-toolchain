@@ -21,6 +21,14 @@ a target. Runtime and language fixture builders emit programs for separate
 guest testing. NextStepCompat's own tests live in nextstepcompat/tests/;
 run its parse-host.py, path-host.py and integer-host.py directly when needed.
 
+The header checks are `test-header-order.py`, `test-sdk-headers.py` and
+`test-sdk-layering.py`. The layering suite exercises macros and typed signal
+sentinels through canonical and qualified SDK paths, include-order recovery,
+GNU language modes and the userspace/kernel feature-selection boundary. It
+also compiles and runs the shared policy headers as strict ISO C89 using the
+host compiler, without SDK preparation. This checks header portability, not
+compatibility of the full runtime with the original NeXT compiler.
+
 ## Guest preparation and controls
 
 The guest/ scripts prepare disposable Intel and Previous test guests, stage

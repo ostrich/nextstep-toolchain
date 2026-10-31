@@ -18,6 +18,16 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def check_sdk_preparer(toolchain):
+    """Refuse a modern bundle whose SDK helper cannot pair with these headers."""
+    helper = toolchain / 'libexec/nextstep/prepare-sdk.py'
+    result = subprocess.run([sys.executable, str(helper), '--header-policy-version'],
+                            capture_output=True, text=True)
+    if result.returncode or result.stdout.strip() != '1':
+        raise ValueError('These headers require the updated toolchain SDK preparer; '
+                         'update the compiler bundle before building or installing NextStepCompat')
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     compiler = p.add_mutually_exclusive_group(required=True)
@@ -36,6 +46,11 @@ def main():
     if a.cc and not a.tools:
         p.error('--cc requires --tools')
     tc = a.toolchain.resolve() if a.toolchain else None
+    if tc:
+        try:
+            check_sdk_preparer(tc)
+        except ValueError as error:
+            p.error(str(error))
     tools = a.tools.resolve() if a.tools else tc / 'libexec/cctools'
     cc = shlex.split(a.cc) if a.cc else [str(tc / 'bin/nextstep-gcc')]
     env = dict(os.environ, LC_ALL='C', ZERO_AR_DATE='1')

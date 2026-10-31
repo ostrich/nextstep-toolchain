@@ -31,7 +31,8 @@ run relevant regressions against the actual stage.
 
 Compiler changes require exact patch replay, installed-driver checks and
 native execution of the affected cases. Header changes require
-tests/test-header-order.py and tests/test-sdk-headers.py. Shared-library
+tests/test-header-order.py, tests/test-sdk-headers.py and
+tests/test-sdk-layering.py. Shared-library
 changes require constructor, ABI and unchanged-consumer upgrade checks.
 The [build guide](cxx-toolchain.md) and [validation scope](validation.md)
 describe the available checks.

@@ -2,9 +2,7 @@
    SPDX-License-Identifier: 0BSD */
 #ifndef NEXTSTEPCOMPAT_LIMITS_H
 #define NEXTSTEPCOMPAT_LIMITS_H
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE 1
-#endif
+#include <ns33-feature-profile.h>
 #include <ansi/limits.h>
 #include_next <limits.h>
 #endif

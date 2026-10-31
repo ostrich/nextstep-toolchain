@@ -2,9 +2,7 @@
    SPDX-License-Identifier: 0BSD */
 #ifndef NEXTSTEPCOMPAT_UNISTD_H
 #define NEXTSTEPCOMPAT_UNISTD_H
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE 1
-#endif
+#include <ns33-feature-profile.h>
 #include_next <unistd.h>
 #ifdef __cplusplus
 extern "C" {

@@ -8,12 +8,20 @@ installation. Ports with shared dependency packages can instead use the
 fixed-VM shared runtime.
 
 The component owns its sources, public headers, pinned upstream inputs,
-licenses and build script. It can be copied out of the compiler repository;
-its current build still requires the NeXT compiler bundle and SDK adaptation.
-Original SDK headers and libraries remain external. Preserve the option of
-future toolchain-independent use: shared SDK repairs must remain reusable with
-this component, and compiler-runtime requirements must stay explicit. Other
-compiler configurations have not been qualified.
+licenses and build script. Its current build uses the NeXT cross-compiler
+bundle. Original SDK headers and libraries remain external.
+
+Preserve the option of using the original NeXT compiler in a future port.
+NextStepCompat supplies application API compatibility; modern-compiler SDK
+syntax repairs belong to the toolchain's separate SDK preparer. Native builds
+must not require that preparation step. Full native-compiler compatibility has
+not been implemented or qualified.
+
+The shared feature-profile and FD_ZERO headers use ISO C89 facilities and can
+be used without SDK preparation. Modern builds also copy them into the private
+SDK overlay to cover qualified header names. The build and install scripts
+refuse an older modern-toolchain preparer that cannot pair with these headers;
+update the toolchain's preparer before building or installing this component.
 
 The stdio overlay supplies append-mode fopen, fdopen and freopen wrappers.
 They enable the native descriptor's O_APPEND flag so writes continue to
@@ -211,7 +219,7 @@ AF_INET6 value lies outside the native kernel domain table; it does not enable
 IPv6 sockets or resolution. NS33_IPV6_DATA_ONLY identifies this distinction.
 socklen_t is an int to match the original socket calls and their result-length
 pointers. The wrappers also publish the existing select, shutdown, getpagesize
-and vsyslog declarations. FD_ZERO uses builtin memset, avoiding the SDK's
+and vsyslog declarations. FD_ZERO uses standard C memset, avoiding the SDK's
 undeclared bzero call in POSIX mode.
 
 The BSD isascii/toascii extensions have single-evaluation macros and addressable

@@ -261,7 +261,10 @@ def main(argv):
             # Derived SDK headers are private inputs, never compiler bundle files.
             overlay = temp / 'sdk-compat'
             preparer = ROOT / ('libexec/nextstep/prepare-sdk.py' if INSTALLED else 'tools/prepare-sdk.py')
-            run([sys.executable, preparer, '--sdk', sdk, '--output', overlay], quiet=True)
+            prepare_command = [sys.executable, preparer, '--sdk', sdk, '--output', overlay]
+            if compatibility_headers:
+                prepare_command += ['--compat-headers', compatibility_headers]
+            run(prepare_command, quiet=True)
             if stdin_data is not None:
                 source = temp / 'stdin.c'
                 source.write_bytes(stdin_data)

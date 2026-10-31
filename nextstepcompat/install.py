@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+from build import check_sdk_preparer
 
 ROOT = Path(__file__).resolve().parent
 
@@ -24,6 +25,10 @@ def main():
         p.error('Installed snapshots are immutable; copy current to a staging directory first')
     if backup.exists() or backup == tc or tc in backup.parents:
         p.error('Backup must be a new directory outside the installed bundle')
+    try:
+        check_sdk_preparer(tc)
+    except ValueError as error:
+        p.error(str(error))
     record = json.loads((build / 'build-record.json').read_text())
     if record.get('canonical_shared'):
         p.error('Shared-runtime intermediates cannot replace the static compiler component')

@@ -9,8 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--header-policy-version', action='version', version='1',
+                   help=argparse.SUPPRESS)
     p.add_argument('--sdk', type=Path, required=True)
     p.add_argument('--output', type=Path, default=ROOT / 'work/sdk-compat')
+    p.add_argument('--compat-headers', type=Path,
+                   help='NextStepCompat headers supplying shared application policy')
     args = p.parse_args()
     sdk = args.sdk.resolve()
     source = sdk / 'usr/include/objc/error.h'
@@ -21,6 +25,20 @@ def main():
         raise SystemExit('Compatibility headers must be outside the original SDK.')
     if (output / 'objc').is_symlink():
         raise SystemExit('Refusing a symlinked output directory.')
+    # Source and installed layouts use the same component-owned policy files.
+    # Copy them into the private overlay so its qualified SDK aliases also work
+    # when NextStepCompat's public wrappers are not on the include path.
+    support = args.compat_headers or (ROOT / 'nextstepcompat/include')
+    if not args.compat_headers and not support.is_dir():
+        support = ROOT.parent / 'include/nextstepcompat'
+    try:
+        support_bytes = {name: (support / name).read_bytes()
+                         for name in ['ns33-feature-profile.h', 'ns33-fdset.h']}
+    except OSError as error:
+        raise SystemExit('Shared NextStepCompat headers are unavailable: ' + str(error))
+    output.mkdir(parents=True, exist_ok=True)
+    for name, data in support_bytes.items():
+        (output / name).write_bytes(data)
     text = source.read_text()
     fixed, count = re.subn(r'(?m)^(\s*extern\s+)_setjmp\s*\(',
                            r'\1int _setjmp(', text)
@@ -87,22 +105,23 @@ def main():
                       'original_sha256': hashlib.sha256(original).hexdigest(),
                       'fixed_sha256': hashlib.sha256(fixed).hexdigest()})
 
-    # Select the same user-space POSIX profile as nextstepcompat/include/standards.h,
-    # even when a qualified SDK path bypasses that wrapper. Do not infer new
-    # interfaces or rewrite layout-bearing declarations. Kernel headers retain
-    # their original feature selection.
+    # Select the component-owned user-space profile for every SDK spelling.
+    # Modern-compiler syntax repairs remain here, not in NextStepCompat.
     profile = ('/* Generated user-space SDK compatibility preamble. */\n'
-               '#if !defined(KERNEL) && !defined(_POSIX_SOURCE)\n'
-               '#define _POSIX_SOURCE 1\n'
-               '#endif\n')
+               '#include <ns33-feature-profile.h>\n')
+    def standards_syntax(text):
+        return text + ('\n#if !defined(KERNEL) && defined(__STRICT_ANSI__)\n'
+                       '#undef __STRICT_ANSI__\n#define __STRICT_ANSI__ 1\n#endif\n')
     derive('ansi/standards.h', ['standards.h', 'ansi/standards.h'], profile,
-           'Select POSIX visibility before the SDK standards guard is set.')
+           'Select the application profile and normalize the legacy compiler macro.',
+           standards_syntax)
     dependencies = ('/* Generated user-space SDK compatibility preamble. */\n'
                     '#ifndef KERNEL\n#include <standards.h>\n'
                     '#include <sys/types.h>\n#endif\n')
     derive('bsd/sys/types.h', ['sys/types.h', 'bsd/sys/types.h'],
            '#ifndef KERNEL\n#include <standards.h>\n#endif\n',
-           'Expose original POSIX types before the one-shot types guard.')
+           'Expose original POSIX types and the shared FD_ZERO correction.',
+           lambda text: text + '\n#include <ns33-fdset.h>\n')
     def signal_prototype(text):
         # Empty () means no arguments in C23 and C++, unlike traditional C.
         # This is the POSIX callback, not the BSD sv_handler interface whose
@@ -127,15 +146,28 @@ def main():
     derive('bsd/sys/signal.h', ['sys/signal.h', 'bsd/sys/signal.h'], dependencies,
            'Make signal types self-contained and prototype the POSIX callback.',
            signal_prototype)
+    def ansi_signal_syntax(text):
+        text, count = re.subn(r'(?m)^#define SIG_ERR[^\n]*$',
+                             '#ifdef KERNEL\n#define SIG_ERR (void (*)())-1\n'
+                             '#else\n#define SIG_ERR ((void (*)(int))-1)\n#endif', text)
+        if count != 1:
+            raise SystemExit('Unexpected SDK SIG_ERR declaration.')
+        return text
+
     derive('ansi/signal.h', ['signal.h', 'ansi/signal.h'], dependencies,
-           'Select the POSIX signal branch before testing strict ANSI mode.')
+           'Select POSIX signal declarations and type SIG_ERR for modern C/C++.',
+           ansi_signal_syntax)
     derive('bsd/netinet/in.h', ['netinet/in.h', 'bsd/netinet/in.h'], dependencies,
            'Make IPv4 address types available without an earlier sys/types include.')
     derive('bsd/netdb.h', ['netdb.h', 'bsd/netdb.h'], dependencies,
            'Guard network database structures against repeated inclusion.',
            lambda text: '#ifndef NEXTSTEP_SDK_NETDB_H\n#define NEXTSTEP_SDK_NETDB_H\n'
                         + text + '\n#endif\n')
-    (output / 'fixes.json').write_text(json.dumps({'fixes': fixes}, indent=2) + '\n')
+    (output / 'fixes.json').write_text(json.dumps({
+        'fixes': fixes,
+        'support_headers': {name: hashlib.sha256(data).hexdigest()
+                            for name, data in support_bytes.items()},
+    }, indent=2) + '\n')
     print('Prepared private SDK compatibility headers; originals unchanged.')
 
 if __name__ == '__main__':
