@@ -8,8 +8,12 @@ installation. Ports with shared dependency packages can instead use the
 fixed-VM shared runtime.
 
 The component owns its sources, public headers, pinned upstream inputs,
-licenses and build script. It can be copied out of the compiler repository
-and built independently. Original SDK headers and libraries remain external.
+licenses and build script. It can be copied out of the compiler repository;
+its current build still requires the NeXT compiler bundle and SDK adaptation.
+Original SDK headers and libraries remain external. Preserve the option of
+future toolchain-independent use: shared SDK repairs must remain reusable with
+this component, and compiler-runtime requirements must stay explicit. Other
+compiler configurations have not been qualified.
 
 The stdio overlay supplies append-mode fopen, fdopen and freopen wrappers.
 They enable the native descriptor's O_APPEND flag so writes continue to

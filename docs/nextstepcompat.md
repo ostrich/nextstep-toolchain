@@ -24,6 +24,23 @@ changes only into a fresh stage, then test and regenerate the integrity
 manifest. Never change a qualified bundle in place. Follow the
 [toolchain workflow](toolchain-workflow.md).
 
+## Independent use
+
+Preserve the option to distribute and use NextStepCompat independently of this
+toolchain. Its current build and header integration depend on the NeXT compiler
+bundle and its SDK preparation; another compiler has not been qualified.
+
+Header cleanup must not turn SDK adaptation into an exclusively toolchain-owned
+prerequisite. Any shared SDK repairs or feature-selection policy should remain
+reusable with the component. The toolchain can invoke that support automatically,
+while a future standalone build can invoke it explicitly against a user-supplied
+SDK. Keep compiler arithmetic, exception handling and compiler TLS support in the
+compiler runtime, with their requirements documented separately.
+
+This is a design constraint, not a commitment to support other compilers now.
+Preserve the native ABI and keep compiler-specific assumptions identifiable so
+future decoupling can be qualified without redesigning the library interfaces.
+
 ## Contracts and coverage
 
 The component's [API overview](../nextstepcompat/README.md#scope),
