@@ -38,9 +38,11 @@ stages it for installation as `/usr/local/bin/hello` in the guest. Use a fresh
 
 ```sh
 umask 022
+mkdir -p workspace
+cp examples/hello/hello.c workspace/hello.c
 mkdir -p hello-stage/usr/local/bin
 bin/nextstep-gcc -arch m68k -arch i386 -arch hppa -arch sparc -O2 \
-    examples/hello/hello.c -o hello-stage/usr/local/bin/hello
+    workspace/hello.c -o hello-stage/usr/local/bin/hello
 chmod 755 hello-stage/usr/local/bin/hello
 bin/nextpkg init hello-package.json --name Hello --version 1.0 --root hello-stage
 ```
@@ -65,7 +67,8 @@ preferred. Ordinary Make and Autoconf builds remain ordinary builds: set CC,
 CXX and the appropriate cross-compilation host triplet for your target.
 Do not execute configure test programs on Linux and mistake them for target tests.
 
-workspace/ is an optional location for projects. Source trees can live anywhere.
+The binary downloads include an empty `workspace/` directory for projects.
+Source trees can also live anywhere else.
 Keep pristine sources, patches, build directories and staging files separate.
 Updates should be extracted alongside the old toolchain; never overwrite your
 SDK or project workspace. Runtime testing on the target remains necessary.

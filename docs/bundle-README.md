@@ -31,9 +31,11 @@ included in this download.
 ## Build programs
 
 ```sh
-bin/nextstep-gcc -arch i386 -O2 hello.c -o hello
+mkdir -p workspace
+cp examples/hello/hello.c workspace/hello.c
+bin/nextstep-gcc -arch i386 -O2 workspace/hello.c -o workspace/hello
 bin/nextstep-gcc -arch m68k -arch i386 -arch hppa -arch sparc \
-    -O2 hello.c -o hello-fat
+    -O2 workspace/hello.c -o workspace/hello-fat
 ```
 
 Use nextstep-g++ for C++. Add this bundle's absolute bin directory to PATH
@@ -62,9 +64,11 @@ for installation as `/usr/local/bin/hello` in the guest. Use a fresh
 
 ```sh
 umask 022
+mkdir -p workspace
+cp examples/hello/hello.c workspace/hello.c
 mkdir -p hello-stage/usr/local/bin
 bin/nextstep-gcc -arch m68k -arch i386 -arch hppa -arch sparc -O2 \
-    examples/hello/hello.c -o hello-stage/usr/local/bin/hello
+    workspace/hello.c -o hello-stage/usr/local/bin/hello
 chmod 755 hello-stage/usr/local/bin/hello
 bin/nextpkg init hello-package.json --name Hello --version 1.0 --root hello-stage
 ```
@@ -87,7 +91,8 @@ See [the packaging guide](docs/packaging.md) for extraction, manifests,
 permissions and hooks. `examples/hello` also supplies a Makefile and manifest.
 For shared-library construction, see [shared libraries](docs/shared-libraries.md).
 
-workspace/ is optional. Projects may live anywhere. Extract updates beside the
+The binary downloads include an empty `workspace/` directory for projects.
+Projects may live anywhere. Extract updates beside the
 old bundle and reuse your private SDK with --sdk or NEXTSTEP_SDK. Do not
 replace or delete your workspace as part of a toolchain update.
 
