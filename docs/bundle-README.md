@@ -1,9 +1,8 @@
 # NEXTSTEP toolchain
 
 GCC @GCC_VERSION@ cross-compiles C, C++, Objective-C and Objective-C++ programs
-for NEXTSTEP 3.3 on Intel, NeXT 68k, HPPA and SPARC. Binaries can also
-run on OPENSTEP, subject to the APIs used. Intel is tested; SPARC and m68k
-are expected to work but have not been tested.
+for NEXTSTEP 3.3 on Intel, NeXT 68k, HPPA and SPARC. Intel binaries also run
+on OPENSTEP 4.2; m68k and SPARC OPENSTEP compatibility is expected but untested.
 
 This is a Linux @HOST_ARCH@ toolchain. Extract it anywhere; it installs nothing.
 It needs Python 3.11+. All host executables use the native 64-bit architecture.

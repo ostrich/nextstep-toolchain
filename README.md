@@ -2,9 +2,8 @@
 
 Build NEXTSTEP 3.3 applications on Linux for Intel, NeXT 68k, HPPA and SPARC.
 GCC 16.2.0 supports C, C++, Objective-C and Objective-C++, with classic Mach-O
-tools and native Installer package creation. Binaries can also run on OPENSTEP,
-subject to the APIs used. Intel is tested; SPARC and m68k are expected to work
-but have not been tested.
+tools and native Installer package creation. Intel binaries also run on
+OPENSTEP 4.2; m68k and SPARC OPENSTEP compatibility is expected but untested.
 
 Extract the binary download anywhere. Python 3.11+ is required. No root access,
 system toolchain installation or system multilib setup is needed. Native
