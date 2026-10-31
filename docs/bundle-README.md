@@ -9,6 +9,12 @@ It needs Python 3.11+. All host executables use the native 64-bit architecture.
 The other host runtime libraries are included, so system multilib packages
 and separate GMP, MPFR, MPC, ISL or Zstandard installations are not needed.
 
+On Windows, run the matching Linux bundle inside
+[WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). On Apple silicon
+Macs, run the arm64 bundle inside a Linux VM or Apple's
+[`container`](https://github.com/apple/container) tool, which requires macOS 26
+or later. WSL 2 and macOS container environments have not been tested.
+
 ## Set up your SDK
 
 Provide your own NEXTSTEP 3.3 developer CD image:
