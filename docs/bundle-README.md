@@ -38,12 +38,15 @@ bin/nextstep-gcc -arch m68k -arch i386 -arch hppa -arch sparc \
     -O2 workspace/hello.c -o workspace/hello-fat
 ```
 
-Use nextstep-g++ for C++. Add this bundle's absolute bin directory to PATH
-for normal Make/configure workflows. Conventional target-prefixed commands
+Use nextstep-g++ for C++. Keep project sources and build outputs under
+`workspace/`. Add this bundle's absolute bin directory to PATH for normal
+Make/configure workflows; the example below assumes your project sources
+are in `workspace/my-project/`. Conventional target-prefixed commands
 are included, such as i386-next-nextstep3.3-gcc, g++, ar and ranlib.
 
 ```sh
 export PATH="/path/to/nextstep-toolchain/bin:$PATH"
+cd workspace/my-project
 ./configure --host=i386-next-nextstep3.3 --prefix=/usr/local
 make
 make DESTDIR="$PWD/stage" install
@@ -60,25 +63,26 @@ programs do not require a separate NextStepCompat guest package.
 From the bundle's root directory after SDK setup, this complete example
 builds the supplied Hello program for all four architectures and stages it
 for installation as `/usr/local/bin/hello` in the guest. Use a fresh
-`hello-stage/` directory and manifest:
+`workspace/hello-stage/` directory and manifest:
 
 ```sh
 umask 022
 mkdir -p workspace
 cp examples/hello/hello.c workspace/hello.c
-mkdir -p hello-stage/usr/local/bin
+mkdir -p workspace/hello-stage/usr/local/bin
 bin/nextstep-gcc -arch m68k -arch i386 -arch hppa -arch sparc -O2 \
-    workspace/hello.c -o hello-stage/usr/local/bin/hello
-chmod 755 hello-stage/usr/local/bin/hello
-bin/nextpkg init hello-package.json --name Hello --version 1.0 --root hello-stage
+    workspace/hello.c -o workspace/hello-stage/usr/local/bin/hello
+chmod 755 workspace/hello-stage/usr/local/bin/hello
+bin/nextpkg init workspace/hello-package.json --name Hello --version 1.0 \
+    --root workspace/hello-stage
 ```
 
-Edit `hello-package.json` to set the package title and description, then build
-and validate it:
+Edit `workspace/hello-package.json` to set the package title and description,
+then build and validate it:
 
 ```sh
-bin/nextpkg build hello-package.json --output dist
-bin/nextpkg check dist/Hello-1.0-1.pkg.NIHS.tar.gz
+bin/nextpkg build workspace/hello-package.json --output workspace/dist
+bin/nextpkg check workspace/dist/Hello-1.0-1.pkg.NIHS.tar.gz
 ```
 
 The `.NIHS` suffix matches this four-architecture executable. An Intel-only
@@ -88,7 +92,15 @@ shows version `1.0-1`. Package creation needs no root access or guest VM.
 Extract the outer `.tar.gz`, transfer `Hello.pkg` to the guest, and open it in
 the native Installer as root. Leave the package's internal files intact.
 See [the packaging guide](docs/packaging.md) for extraction, manifests,
-permissions and hooks. `examples/hello` also supplies a Makefile and manifest.
+permissions and hooks. To use the supplied Makefile and manifest instead,
+copy the complete example into the workspace first:
+
+```sh
+cp -R examples/hello workspace/hello-project
+export PATH="$PWD/bin:$PATH"
+make -C workspace/hello-project package
+```
+
 For shared-library construction, see [shared libraries](docs/shared-libraries.md).
 
 The binary downloads include an empty `workspace/` directory for projects.

@@ -32,27 +32,29 @@ SDK files are private inputs and are not included in our downloads.
 ## Compile and package
 
 Run these commands from the extracted bundle's root directory after SDK setup.
+Sources, staging files, manifests and generated packages stay under `workspace/`.
 This example builds the supplied Hello program for all four architectures and
 stages it for installation as `/usr/local/bin/hello` in the guest. Use a fresh
-`hello-stage/` directory and manifest for the example.
+`workspace/hello-stage/` directory and manifest for the example.
 
 ```sh
 umask 022
 mkdir -p workspace
 cp examples/hello/hello.c workspace/hello.c
-mkdir -p hello-stage/usr/local/bin
+mkdir -p workspace/hello-stage/usr/local/bin
 bin/nextstep-gcc -arch m68k -arch i386 -arch hppa -arch sparc -O2 \
-    workspace/hello.c -o hello-stage/usr/local/bin/hello
-chmod 755 hello-stage/usr/local/bin/hello
-bin/nextpkg init hello-package.json --name Hello --version 1.0 --root hello-stage
+    workspace/hello.c -o workspace/hello-stage/usr/local/bin/hello
+chmod 755 workspace/hello-stage/usr/local/bin/hello
+bin/nextpkg init workspace/hello-package.json --name Hello --version 1.0 \
+    --root workspace/hello-stage
 ```
 
-Edit `hello-package.json` to set the package title and description, then build
-and validate it:
+Edit `workspace/hello-package.json` to set the package title and description,
+then build and validate it:
 
 ```sh
-bin/nextpkg build hello-package.json --output dist
-bin/nextpkg check dist/Hello-1.0-1.pkg.NIHS.tar.gz
+bin/nextpkg build workspace/hello-package.json --output workspace/dist
+bin/nextpkg check workspace/dist/Hello-1.0-1.pkg.NIHS.tar.gz
 ```
 
 The archive contains `Hello.pkg`; its version is `1.0-1`. `NIHS` identifies

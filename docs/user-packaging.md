@@ -23,31 +23,35 @@ to build your program does.
 
 ## Package a staging directory
 
-Suppose you have already built an Intel NEXTSTEP executable at `build/example`
-and want it installed as `/usr/local/bin/example`. Use a fresh staging
+Suppose you have already built an Intel NEXTSTEP executable at
+`workspace/build/example` and want it installed as `/usr/local/bin/example`.
+Use a fresh staging
 directory containing only files that belong in this package:
 
 ```sh
 umask 022
-mkdir -p stage/usr/local/bin
-cp build/example stage/usr/local/bin/example
-chmod 755 stage/usr/local/bin/example
-bin/nextpkg init example.json --name Example --version 1.0 --root stage
+mkdir -p workspace/stage/usr/local/bin
+cp workspace/build/example workspace/stage/usr/local/bin/example
+chmod 755 workspace/stage/usr/local/bin/example
+bin/nextpkg init workspace/example.json --name Example --version 1.0 \
+    --root workspace/stage
 ```
 
-Paths inside `stage/` become guest installation paths; `stage/` itself is not
-installed. For example, `stage/usr/local/bin/example` becomes
+Paths inside `workspace/stage/` become guest installation paths; the staging
+directory itself is not installed. For example,
+`workspace/stage/usr/local/bin/example` becomes
 `/usr/local/bin/example`. Do not put source trees, build directories or host
 executables in the staging directory.
 
-Open `example.json` in a text editor and set `title` and `description`. The
-generated manifest includes a package revision and detects the payload
+Open `workspace/example.json` in a text editor and set `title` and
+`description`. The generated manifest includes a package revision and detects
+the payload
 architectures.
 Then build and validate the package:
 
 ```sh
-bin/nextpkg build example.json --output dist
-bin/nextpkg check dist/Example-1.0-1.pkg.I.tar.gz
+bin/nextpkg build workspace/example.json --output workspace/dist
+bin/nextpkg check workspace/dist/Example-1.0-1.pkg.I.tar.gz
 ```
 
 The result is `Example-1.0-1.pkg.I.tar.gz` for this Intel executable, plus a
@@ -62,8 +66,8 @@ its upstream version. Existing archives are protected from replacement; use
 `--force` for an intentional rebuild.
 
 ```sh
-bin/nextpkg build example.json --dry-run
-bin/nextpkg inspect dist/Example-1.0-1.pkg.I.tar.gz
+bin/nextpkg build workspace/example.json --dry-run
+bin/nextpkg inspect workspace/dist/Example-1.0-1.pkg.I.tar.gz
 ```
 
 `check` compares payload paths, permissions, numeric ownership, file checksums
@@ -78,12 +82,13 @@ Extract the outer `.tar.gz` archive on the host or with a guest archive
 utility. On the Linux host, for example:
 
 ```sh
-mkdir unpacked
-tar -xzf dist/Example-1.0-1.pkg.I.tar.gz -C unpacked
+mkdir -p workspace/unpacked
+tar -xzf workspace/dist/Example-1.0-1.pkg.I.tar.gz -C workspace/unpacked
 ```
 
-Transfer the complete `unpacked/Example.pkg` directory to the guest, preserving
-its contents, then double-click it to open the native Installer. Run Installer
+Transfer the complete `workspace/unpacked/Example.pkg` directory to the guest,
+preserving its contents, then double-click it to open the native Installer.
+Run Installer
 as root to install the files and native receipt. If you supplied a README, it
 appears beside the package. Leave the `.bom`, `.info`, `.sizes`, `.tar.Z` and
 any hooks inside `Example.pkg` intact. Do not extract the inner payload manually.
