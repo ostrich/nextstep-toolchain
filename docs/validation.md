@@ -35,9 +35,7 @@ visual Installer walkthrough.
 These are toolchain release checks, not exhaustive compiler conformance or a
 promise that an arbitrary application will compile unchanged. Programs still
 need target-side testing. Physical hardware and a range of Linux distributions
-were not separately qualified. The original x86-64 revision 1 bundle needs
-32-bit x86 execution support; the native 64-bit host builds described below
-remove that requirement.
+were not separately qualified.
 
 The release records its source commit and a code fingerprint in
 share/distribution.json. Its code matches the guest-tested bundle, comparing

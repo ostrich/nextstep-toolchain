@@ -41,7 +41,8 @@ installed. For example, `stage/usr/local/bin/example` becomes
 executables in the staging directory.
 
 Open `example.json` in a text editor and set `title` and `description`. The
-generated manifest uses revision 1 and detects the payload architectures.
+generated manifest includes a package revision and detects the payload
+architectures.
 Then build and validate the package:
 
 ```sh

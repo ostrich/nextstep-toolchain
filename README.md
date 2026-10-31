@@ -8,8 +8,7 @@ but have not been tested.
 
 Extract the binary download anywhere. Python 3.11+ is required. No root access,
 system toolchain installation or system multilib setup is needed. Native
-64-bit builds support Linux x86-64 and arm64. Older x86-64 revision 1 archives
-require kernel support for 32-bit x86 execution.
+64-bit builds support Linux x86-64 and arm64.
 The usage below describes the binary archive. This source checkout contains
 the build scripts; see the local source-build instructions below.
 
