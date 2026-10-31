@@ -12,8 +12,8 @@ and separate GMP, MPFR, MPC, ISL or Zstandard installations are not needed.
 On Windows, run the matching Linux bundle inside
 [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). On Apple silicon
 Macs, run the arm64 bundle inside a Linux VM or Apple's
-[`container`](https://github.com/apple/container) tool, which requires macOS 26
-or later. WSL 2 and macOS container environments have not been tested.
+[`container`](https://github.com/apple/container) tool. WSL 2 and macOS
+container environments have not been tested.
 
 ## Set up your SDK
 
