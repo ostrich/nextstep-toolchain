@@ -1,0 +1,73 @@
+{
+  "status": "passed",
+  "gcc_version": "16.2.0",
+  "release_revision": 3,
+  "patches": 14,
+  "source_sha256": "8fd4dcf886b903ab0a17901b0d2e9715f14c576f90daabdaf638a8b46c32934c",
+  "host_architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "matching_language_executables": 20,
+  "matching_prologue_fat_executables": 3,
+  "example_package_sha256": "f18b522c0fc61fe403cde89c1fe7a46fb88549ebe0557291f27edd7b055c82de",
+  "example_package_matches_prior_native_qualified_archive": true,
+  "retained_target_library_bytes": true,
+  "native_focused_checks_per_target": 702,
+  "native": {
+    "m68k": {
+      "native_halt": true,
+      "fsck": {
+        "disk.img": 0
+      },
+      "status": "collected",
+      "result_read_exitcode": 0,
+      "passed": true
+    },
+    "i386": {
+      "native_halt": true,
+      "fsck": {
+        "root.raw": 0,
+        "work.raw": 0
+      },
+      "status": "collected",
+      "result_read_exitcode": 0,
+      "passed": true
+    },
+    "hppa": {
+      "native_halt": true,
+      "fsck": {
+        "disk.raw": 0
+      },
+      "status": "collected",
+      "result_read_exitcode": 0,
+      "passed": true
+    },
+    "sparc": {
+      "native_halt": true,
+      "fsck": {
+        "disk.raw": 0
+      },
+      "status": "collected",
+      "result_read_exitcode": 0,
+      "passed": true
+    }
+  },
+  "host_build_record_sha256": {
+    "x86_64": {
+      "i386": "34b7c0b0c9e318dc289705e26fbe3bfe2c6735e112ca468599a4aeb7cf4da4bc",
+      "m68k": "d6d1ce67e9b7571ebfe55460da58701ac48ac8a40bf4cca78d2acac210e05789",
+      "hppa": "f2d281405dae6814407c09b715cf5c5470cf7a668db2eac43bbe714024f52183",
+      "sparc": "c814df2f4d8ee9e4350c3820275683021f151ae5a06eb21f081a1e74ea254b94"
+    },
+    "arm64": {
+      "i386": "d36ea51bdae6b429cfbfa39de4abd8621abe4e4c57a37da3dec6382b5e62a9ba",
+      "m68k": "7822bfcaff70162b5d625451f4d1bb3aa2d000ca9251bd26d5ca20354cf36e73",
+      "hppa": "13b6bdc15ba8a8c15a175c037218b5ad08cc2857f1de0d249abdaf453a38d058",
+      "sparc": "fa96f4a56930410a4c45b5899c1377ab68431f767025912770daa3f7ca3d804b"
+    }
+  },
+  "package_builder_tests": 24,
+  "header_order_checks_per_host": 16,
+  "scope": "Focused compiler refresh. Existing target libraries, classic tools, SDK extractor and package tools retained. Prior package installation qualification retained because example archive is byte-identical; complete compiler campaigns not repeated."
+}

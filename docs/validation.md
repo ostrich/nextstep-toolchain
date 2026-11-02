@@ -115,5 +115,16 @@ volatile frame checks, across -O1/-O2/-O3. Intel's pre-fix compiler failed the
 negative control as expected. Every disposable guest halted natively and passed
 filesystem checks. Intel/SPARC exercised looped probes; m68k/HPPA exercised
 ordinary large-frame entries without static probe loops. This is focused
-qualification, not a repetition of the complete compiler campaigns. See
-[the prologue report](stack-prologues-validation.md) for cases and limits.
+qualification, not a repetition of the complete compiler campaigns. These results do not establish complete stack-clash protection.
+
+The v0.2.1 bundles rebuild all four compiler frontends for Linux x86-64 and
+ARM64. Both hosts executed the public driver and produced identical bytes for
+20 thin/fat C, C++, Objective-C and Objective-C++ executables and three fat
+prologue-test executables. Both passed all 16 header-order checks. The release
+prologue binaries passed the focused native NIHS batch above. Target libraries
+retain their prior bytes and qualification.
+
+All 24 package-builder tests pass. The rebuilt example package matches the
+previously native-tested install/execute/verify/remove archive byte for byte;
+that installation qualification is retained rather than reported as a new
+installation run. Source guards and full locked-source patch replay passed.
