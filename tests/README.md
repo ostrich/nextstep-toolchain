@@ -29,6 +29,11 @@ also compiles and runs the shared policy headers as strict ISO C89 using the
 host compiler, without SDK preparation. This checks header portability, not
 compatibility of the full runtime with the original NeXT compiler.
 
+The `stack-prologues/` batch checks aggregate-result pointers, ordinary
+arguments and nested-function static chains across large frames on NIHS.
+`test-prepared-source.py` checks that compiler source guards reject edited or
+stale inputs. See [prologue qualification](../docs/stack-prologues-validation.md).
+
 ## Guest preparation and controls
 
 The guest/ scripts prepare disposable Intel and Previous test guests, stage

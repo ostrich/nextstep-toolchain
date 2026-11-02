@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import urllib.request
+from build_inputs import patch_hashes, source_files, verify_source
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -37,7 +38,11 @@ def main():
     source = parent / ('gcc-' + gcc['version'])
     print(f'{archive.name}: both locked hashes match', flush=True)
     if source.exists():
-        print('Source already exists; left untouched (not certified pristine).')
+        if args.patched:
+            verify_source(ROOT, source)
+            print('Existing prepared source verified against locked inputs and file hashes.')
+        else:
+            print('Source already exists; left untouched (not certified pristine).')
     else:
         with tempfile.TemporaryDirectory(prefix='extract-', dir=parent) as staging:
             subprocess.run(['tar', '-xJf', str(archive), '-C', staging], check=True)
@@ -50,6 +55,11 @@ def main():
                             subprocess.run(['patch', '-p1', '--batch', '--forward', '--fuzz=0'],
                                            cwd=extracted, stdin=patch, check=True)
                 print('Applied ordered target patches.', flush=True)
+            if args.patched:
+                record = {'source_archive_sha256': gcc['sha256'],
+                          'patches_sha256': patch_hashes(ROOT),
+                          'files': source_files(extracted)}
+                (extracted / '.prepared-source.json').write_text(json.dumps(record, indent=2) + '\n')
             extracted.rename(source)
 
 if __name__ == '__main__':

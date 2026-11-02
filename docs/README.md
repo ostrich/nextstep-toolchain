@@ -22,3 +22,6 @@ The bundle README and user guides are also used to generate the binary
 archive's documentation. NEXTSTEP SDKs and target systems are private inputs,
 not documentation dependencies. Application release reports and local build
 journals do not belong in this project.
+
+- [Hidden arguments and stack probes](stack-prologues-validation.md) records
+  the focused four-target regression and Intel negative control.

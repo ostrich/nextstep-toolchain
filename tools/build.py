@@ -6,7 +6,7 @@ import os
 import shlex
 from pathlib import Path
 import subprocess
-from build_inputs import digest, patch_hashes
+from build_inputs import digest, patch_hashes, verify_source
 ROOT = Path(__file__).resolve().parents[1]
 
 def main():
@@ -40,6 +40,7 @@ def main():
     source = ROOT / 'work' / ('gcc-' + gcc['version'])
     if not (source / 'gcc/config' / ('pa' if args.arch == 'hppa' else args.arch) / 'nextstep.h').exists():
         raise SystemExit('Run tools/prepare.py --patched first.')
+    source_manifest = verify_source(ROOT, source)
     build = args.output.resolve() if args.output else ROOT / 'work' / ('build-' + args.arch)
     build.mkdir(parents=True, exist_ok=True)
     stub = ROOT / 'tools/target-tool-unavailable'
@@ -59,7 +60,8 @@ def main():
     env = dict(os.environ, LC_ALL='C', CFLAGS=host_flags, CXXFLAGS=host_flags)
     record = {'arch': args.arch, 'host': args.host, 'languages': args.languages.split(','),
               'exception_model': args.exception_model, 'thread_model': args.thread_model,
-              'patches_sha256': patch_hashes(ROOT), 'source_archive_sha256': gcc['sha256'], 'host_cflags': host_flags}
+              'patches_sha256': patch_hashes(ROOT), 'source_archive_sha256': gcc['sha256'], 'host_cflags': host_flags,
+              'prepared_source_manifest_sha256': source_manifest}
     make_args = ['make', '-j' + str(args.jobs), 'all-gcc']
     if args.build_target_compiler:
         bootstrap = args.build_target_compiler.resolve()

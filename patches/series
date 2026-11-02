@@ -11,3 +11,4 @@
 0011-nextstep-correct-call-lowering-and-driver-intermediates.patch
 0012-m68k-transfer-copysign-signs-with-integer-operations.patch
 0013-m68k-round-single-products-once-at-the-destination.patch
+0014-i386-preserve-aggregate-result-register-during-stack-probes.patch

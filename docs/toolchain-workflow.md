@@ -17,6 +17,11 @@ workspace directory, not in this toolchain repository.
 - [tools/](../tools/README.md) contains build recipes, driver sources and release tools.
 - [tests/](../tests/README.md) contains regression checks, guest helpers and qualification fixtures.
 
+`tools/prepare.py --patched` records the locked archive, ordered patches and
+prepared source-file hashes. Compiler and basic-runtime builds verify this
+record before starting. If an old or edited tree is rejected, preserve it
+separately and prepare a fresh tree; do not label old source with new patches.
+
 Export fixes as ordered patches against pristine pinned sources. Do not rely
 on edits in generated upstream trees. Keep SDKs, media, caches and build
 products ignored. Record input identities without distributing SDK contents.
@@ -65,6 +70,6 @@ private inputs.
 
 After qualification, tools/create-release.py compares the stage with the
 explicitly supplied tested bundle, checks SDK and guest evidence, refreshes
-release metadata, audits the contents and writes the archive and checksum.
+release metadata, audits the contents and writes the archive.
 Run it with --help for evidence arguments. It neither installs nor uploads
 anything. The SDK and workspace are user-owned and never part of a release.

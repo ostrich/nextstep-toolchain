@@ -102,3 +102,18 @@ Both host bundles passed relocation into paths containing spaces. Release
 audits require every host ELF image to use the declared 64-bit architecture,
 verify command executable bits and reject private paths and SDK contents.
 These checks do not extend OPENSTEP runtime qualification to SPARC or m68k.
+
+## Intel stack-probe correction
+
+GCC patch 0014 fixes a register conflict in the restored NeXT/i386 ABI: looped
+stack probes must preserve the incoming aggregate-result pointer in EBX. This
+is a NeXT target integration defect; no stock upstream target failure has been
+demonstrated. Optimization and stack-clash protection remain enabled.
+
+The focused NIHS batch passed 702 result/scalar checks per architecture, plus
+volatile frame checks, across -O1/-O2/-O3. Intel's pre-fix compiler failed the
+negative control as expected. Every disposable guest halted natively and passed
+filesystem checks. Intel/SPARC exercised looped probes; m68k/HPPA exercised
+ordinary large-frame entries without static probe loops. This is focused
+qualification, not a repetition of the complete compiler campaigns. See
+[the prologue report](stack-prologues-validation.md) for cases and limits.

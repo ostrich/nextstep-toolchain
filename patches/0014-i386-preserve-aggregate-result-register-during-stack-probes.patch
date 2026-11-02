@@ -1,0 +1,55 @@
+--- a/gcc/config/i386/i386.cc
++++ b/gcc/config/i386/i386.cc
+@@ -8151,29 +8151,46 @@
+       int drap_regno
+ 	= crtl->drap_reg ? REGNO (crtl->drap_reg) : INVALID_REGNUM;
+ 
++      /* A dedicated aggregate-result register is an incoming argument even
++         when it is callee-saved.  Saving it in the prologue protects the
++         caller's value, but does not make its live incoming value scratch.  */
++      rtx struct_value
++        = cfun->returns_struct
++          ? targetm.calls.struct_value_rtx (fntype, 1) : NULL_RTX;
++      unsigned int struct_value_regno
++        = struct_value && REG_P (struct_value)
++          ? REGNO (struct_value) : INVALID_REGNUM;
++
+       /* 'fastcall' sets regparm to 2, uses ecx/edx for arguments and eax
+ 	  for the static chain register.  */
+       if ((regparm < 1 || (fastcall_p && !static_chain_p))
+-	  && drap_regno != AX_REG)
++	  && drap_regno != AX_REG
++	  && struct_value_regno != AX_REG)
+ 	regno = AX_REG;
+       /* 'thiscall' sets regparm to 1, uses ecx for arguments and edx
+ 	  for the static chain register.  */
+-      else if (thiscall_p && !static_chain_p && drap_regno != AX_REG)
++      else if (thiscall_p && !static_chain_p && drap_regno != AX_REG
++               && struct_value_regno != AX_REG)
+         regno = AX_REG;
+-      else if (regparm < 2 && !thiscall_p && drap_regno != DX_REG)
++      else if (regparm < 2 && !thiscall_p && drap_regno != DX_REG
++               && struct_value_regno != DX_REG)
+ 	regno = DX_REG;
+       /* ecx is the static chain register.  */
+       else if (regparm < 3 && !fastcall_p && !thiscall_p
+ 	       && !static_chain_p
+-	       && drap_regno != CX_REG)
++	       && drap_regno != CX_REG
++	       && struct_value_regno != CX_REG)
+ 	regno = CX_REG;
+-      else if (ix86_save_reg (BX_REG, true, false))
++      else if (struct_value_regno != BX_REG
++               && ix86_save_reg (BX_REG, true, false))
+ 	regno = BX_REG;
+       /* esi is the static chain register.  */
+       else if (!(regparm == 3 && static_chain_p)
++	       && struct_value_regno != SI_REG
+ 	       && ix86_save_reg (SI_REG, true, false))
+ 	regno = SI_REG;
+-      else if (ix86_save_reg (DI_REG, true, false))
++      else if (struct_value_regno != DI_REG
++               && ix86_save_reg (DI_REG, true, false))
+ 	regno = DI_REG;
+       else
+ 	{

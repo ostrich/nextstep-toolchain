@@ -6,7 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
-from build_inputs import digest, patch_hashes
+from build_inputs import digest, patch_hashes, verify_source
 
 ROOT = Path(__file__).resolve().parents[1]
 p = argparse.ArgumentParser(description=__doc__)
@@ -24,6 +24,7 @@ if a.jobs < 1:
     p.error('--jobs must be positive')
 W = ROOT / 'work'
 S = W / 'gcc-16.2.0'
+source_manifest = verify_source(ROOT, S)
 T = a.tools.resolve()
 BASE = '''muldi3 negdi2 lshrdi3 ashldi3 ashrdi3 cmpdi2 ucmpdi2 absvsi2 absvdi2
 addvsi3 addvdi3 subvsi3 subvdi3 mulvsi3 mulvdi3 negvsi2 negvdi2 ffssi2 ffsdi2
@@ -54,7 +55,7 @@ for arch in (['i386', 'm68k', 'sparc', 'hppa'] if a.arch == 'all' else [a.arch])
         return {'helper': name, 'passed': c.returncode == 0, 'steps': rows}
     with ThreadPoolExecutor(max_workers=a.jobs) as pool:
         rows = list(pool.map(build, FUNCS))
-    record = {'arch': arch, 'optimization': '-O2', 'compiler_sha256': digest(G / 'cc1'),
+    record = {'arch': arch, 'prepared_source_manifest_sha256': source_manifest, 'optimization': '-O2', 'compiler_sha256': digest(G / 'cc1'),
               'patches_sha256': patch_hashes(ROOT), 'source_sha256': digest(S / 'libgcc/libgcc2.c'),
               'assembler_sha256': digest(T / ('as-' + arch)), 'helpers': rows}
     failed = [r for r in rows if not r['passed']]

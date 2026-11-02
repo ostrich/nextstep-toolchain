@@ -1,0 +1,91 @@
+{
+  "status": "passed",
+  "source_sha256": "8fd4dcf886b903ab0a17901b0d2e9715f14c576f90daabdaf638a8b46c32934c",
+  "toolchain_manifest_sha256": "b914e8dc5181cdaf2591f130de9792ffe39b27915dc5a2d229b5bb4488ee5497",
+  "negative_control_manifest_sha256": "78bf28d526323ca41647c60350ba6c77347ad3dff8024e887983b38fd832d5a2",
+  "build_record_sha256": "2677ceaeeeaf6aaa686d18b58c148f1b45d053f9badd63a6604bf2f2a28dac83",
+  "assembly_audit_sha256": "48504702644f86c335bbde8951009f0b31a804b0d8ae96647464a81948587ca1",
+  "targets": {
+    "i386": {
+      "checks_per_optimization": 234,
+      "optimization_levels": [
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "collection": {
+        "native_halt": true,
+        "fsck": {
+          "root.raw": 0,
+          "work.raw": 0
+        },
+        "status": "collected",
+        "result_read_exitcode": 0,
+        "passed": true
+      },
+      "results_sha256": "f0fde70b5c7ba72ae68a15993d3dafe5ee574ebd449607f73395638cdd49220a",
+      "collection_sha256": "2ce23ce8c241d13dc72a648fef75035eaeb427cf2ae7c94eaf3b2875e37a2aca",
+      "looped_static_probes_observed": true
+    },
+    "m68k": {
+      "checks_per_optimization": 234,
+      "optimization_levels": [
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "collection": {
+        "native_halt": true,
+        "fsck": {
+          "disk.img": 0
+        },
+        "status": "collected",
+        "result_read_exitcode": 0,
+        "passed": true
+      },
+      "results_sha256": "b494035b475fdd15653bfa99588a40745e675b3d6b07b28441372c7238b1e371",
+      "collection_sha256": "16eb7295d5205ec73764b5bff690e5dae387ec738b10d13ff2881b28cef82e22",
+      "looped_static_probes_observed": false
+    },
+    "hppa": {
+      "checks_per_optimization": 234,
+      "optimization_levels": [
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "collection": {
+        "native_halt": true,
+        "fsck": {
+          "disk.raw": 0
+        },
+        "status": "collected",
+        "result_read_exitcode": 0,
+        "passed": true
+      },
+      "results_sha256": "61a0dad5cdbef0be17849b4d5f42d5da3287d6a4b99d45cb9cb897198fdbf1c2",
+      "collection_sha256": "d1f331bb6f4c136b8de8709a626621235123436a2d432ba156a7ccfc05922a44",
+      "looped_static_probes_observed": false
+    },
+    "sparc": {
+      "checks_per_optimization": 234,
+      "optimization_levels": [
+        "O1",
+        "O2",
+        "O3"
+      ],
+      "collection": {
+        "native_halt": true,
+        "fsck": {
+          "disk.raw": 0
+        },
+        "status": "collected",
+        "result_read_exitcode": 0,
+        "passed": true
+      },
+      "results_sha256": "0b55156ad68a1f3af92ba1d8c71c2cee68dcc1efda8a7bcfaa753ad927b7d2a3",
+      "collection_sha256": "d1f331bb6f4c136b8de8709a626621235123436a2d432ba156a7ccfc05922a44",
+      "looped_static_probes_observed": true
+    }
+  }
+}

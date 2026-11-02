@@ -19,6 +19,7 @@ repository root. Generated source edits are not a substitute for this series.
 | 0011 | HPPA complex calls and trampolines, Intel dynamic stack alignment and driver intermediate-output handling. |
 | 0012 | m68k copysign sign transfers through integer operations. |
 | 0013 | m68k single-precision multiplication rounded once at its destination. |
+| 0014 | Preserve the NeXT/i386 hidden aggregate-result pointer during stack probes. |
 
 Target hooks are constrained to the restored NeXT configurations where
 applicable. The series does not establish support for every upstream GCC
