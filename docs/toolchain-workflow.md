@@ -71,5 +71,8 @@ private inputs.
 After qualification, tools/create-release.py compares the stage with the
 explicitly supplied tested bundle, checks SDK and guest evidence, refreshes
 release metadata, audits the contents and writes the archive.
-Run it with --help for evidence arguments. It neither installs nor uploads
+Pass `--release-tag v0.2.1` (using the tag being released). Archive names and
+top-level directories include the GCC version and that tag's version, with its
+leading `v` omitted: `nextstep-toolchain-16.2.0-0.2.1-linux-x86_64.tar.gz`.
+There is no separate release revision counter. Run it with --help for evidence arguments. It neither installs nor uploads
 anything. The SDK and workspace are user-owned and never part of a release.

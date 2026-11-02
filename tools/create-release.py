@@ -5,6 +5,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -15,6 +16,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
+
+
+def release_version(tag):
+    """Use the tag version verbatim, omitting only its optional leading v."""
+    match = re.fullmatch(r"v?([0-9]+(?:\.[0-9]+)+(?:-[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*)?)", tag)
+    if not match:
+        raise ValueError("Release tag must be a version such as v0.2.1")
+    return match.group(1)
 
 
 def code_digest(path):
@@ -52,11 +61,13 @@ def main():
     p.add_argument("--guest-results", type=Path, required=True)
     p.add_argument("--package-result", type=Path, required=True)
     p.add_argument("--sdk-evidence", type=Path, required=True)
-    p.add_argument("--revision", type=int, default=1)
+    p.add_argument("--release-tag", required=True, help="Release tag, such as v0.2.1; supplies the archive version")
     p.add_argument("--output", type=Path, default=ROOT / "dist")
     a = p.parse_args()
-    if a.revision < 1:
-        p.error("Revision must be positive")
+    try:
+        tag_version = release_version(a.release_tag)
+    except ValueError as error:
+        p.error(str(error))
     stage = a.stage.resolve()
     subprocess.run(
         [
@@ -98,7 +109,7 @@ def main():
     if host not in ["x86_64", "aarch64"]:
         p.error("Unsupported release host architecture: " + host)
     host_name = {"aarch64": "arm64"}.get(host, host)
-    name = f"nextstep-toolchain-{version}-{a.revision}-linux-{host_name}"
+    name = f"nextstep-toolchain-{version}-{tag_version}-linux-{host_name}"
     destination = a.output.resolve()
     destination.mkdir(parents=True, exist_ok=True)
     archive = destination / (name + ".tar.gz")
@@ -115,7 +126,8 @@ def main():
     report = {
         "schema": 1,
         "qualified": True,
-        "release_revision": a.revision,
+        "release_tag": a.release_tag,
+        "release_version": tag_version,
         "source_commit": source_commit,
         "required_host_python": "3.11+",
         "code_fingerprint": digest(json.dumps(actual, sort_keys=True).encode()),

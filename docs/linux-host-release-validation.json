@@ -1,7 +1,6 @@
 {
   "status": "passed",
   "gcc_version": "16.2.0",
-  "release_revision": 3,
   "patches": 14,
   "source_sha256": "8fd4dcf886b903ab0a17901b0d2e9715f14c576f90daabdaf638a8b46c32934c",
   "host_architectures": [
@@ -69,5 +68,7 @@
   },
   "package_builder_tests": 24,
   "header_order_checks_per_host": 16,
-  "scope": "Focused compiler refresh. Existing target libraries, classic tools, SDK extractor and package tools retained. Prior package installation qualification retained because example archive is byte-identical; complete compiler campaigns not repeated."
+  "scope": "Focused compiler refresh. Existing target libraries, classic tools, SDK extractor and package tools retained. Prior package installation qualification retained because example archive is byte-identical; complete compiler campaigns not repeated.",
+  "release_tag": "v0.2.1",
+  "release_version": "0.2.1"
 }

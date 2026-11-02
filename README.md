@@ -110,7 +110,8 @@ for maintainer entry points and qualification helpers.
 
 Release checks and their limits are described in [validation](docs/validation.md).
 Local archives are created with tools/create-release.py after testing a fresh
-stage. No remote repository or upload is part of that command.
+stage, passing the release tag with `--release-tag` to set its archive version.
+No remote repository or upload is part of that command.
 
 See the [documentation index](docs/README.md) for runtime, ABI, debugging and
 shared-library references.

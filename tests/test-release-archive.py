@@ -28,6 +28,14 @@ class ArchiveTest(unittest.TestCase):
             b.write_bytes(archive(b"abd", 2))
             self.assertNotEqual(release.code_digest(a), release.code_digest(b))
 
+    def test_release_tag_supplies_archive_version(self):
+        self.assertEqual(release.release_version("v0.2.1"), "0.2.1")
+        self.assertEqual(release.release_version("0.2.1"), "0.2.1")
+        self.assertEqual(release.release_version("v1.0.0-rc.1"), "1.0.0-rc.1")
+        for invalid in ["", "3", "v0.2.1/other", "../0.2.1", "master"]:
+            with self.assertRaises(ValueError):
+                release.release_version(invalid)
+
     def test_truncated_archive_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             a = Path(temp) / "a"

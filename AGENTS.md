@@ -12,3 +12,7 @@ The binary bundle requires Python 3.11+ and supplies its other runtime tools.
 SDK files, media, VM images and build products must remain ignored and must
 never enter release archives. Do not commit or embed private filesystem paths.
 Keep the public workflow limited to normal compiler and nextpkg commands.
+
+Release archive names and their top-level directories use the release tag's
+version without its leading v, alongside the GCC version. Pass --release-tag
+to tools/create-release.py; do not use a separate numeric revision counter.
